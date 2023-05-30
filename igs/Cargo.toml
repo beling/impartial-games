@@ -30,7 +30,12 @@ nauty-Traces-sys = { version = "0.2", features = ["libc"], optional = true } # r
 
 [dev-dependencies]
 maplit = "1.*"
+criterion = "0.5"
 
 [features]
 BP128 = ["superslice"]
 CMPH = []
+
+[[bench]]
+name = "br"
+harness = false
