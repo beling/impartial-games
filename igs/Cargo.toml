@@ -1,0 +1,36 @@
+[package]
+name = "igs"
+version = "0.1.0"
+authors = ["Piotr Beling <piotr.beling@wmii.uni.lodz.pl>"]
+edition = "2021"
+license = "LGPL-3.0-or-later"
+description = "The library for for solving impartial games."
+documentation = "https://docs.rs/igs"
+repository = "https://github.com/beling/impartial-games"
+readme = "README.md"
+include = [ "**/*.rs", "Cargo.toml", "README.md" ]
+categories = ["algorithms", "game-development", "mathematics", "science"]
+keywords = [ "game", "impartial", "solver", "cram", "chomp" ]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ph = "0.6"
+binout = "0.2"
+csf = "0.1"
+bitm = "0.2"
+arrayvec = "0.7"
+co_sort = "0.2.*"
+#smallvec = "1.4.2"
+#bumpalo = { git = "https://github.com/beling/bumpalo", version="3.4.0", features=["collections"] }
+superslice = { version = "1", optional = true }    # only for BP128
+cpu-time = "1"
+lru = { version = ">=0.6", optional = true }    # if enabled, lru::LRUCache can be used as TT
+nauty-Traces-sys = { version = "0.2", features = ["libc"], optional = true } # required by Cram TT that uses graph labeling (by nauty)
+
+[dev-dependencies]
+maplit = "1.*"
+
+[features]
+BP128 = ["superslice"]
+CMPH = []

@@ -1,0 +1,23 @@
+[package]
+name = "igsolve"
+version = "0.1.0"
+authors = ["Piotr Beling <piotr.beling@wmii.uni.lodz.pl>"]
+license = "GPL-3.0-or-later"
+description = "The program for solving impartial games."
+edition = "2021"
+documentation = "https://docs.rs/igsolve"
+repository = "https://github.com/beling/impartial-games"
+readme = "README.md"
+include = [ "**/*.rs", "Cargo.toml", "README.md" ]
+categories = ["algorithms", "game-development", "mathematics", "science"]
+keywords = [ "game", "impartial", "solver", "cram", "chomp" ]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+igs = { version="0.1", path = "../igs" } # , features=["nauty-Traces-sys"]
+#cpuprofiler = "0.0.4"
+#strum = "0.22"
+#strum_macros = "0.22"
+clap = { version="4.0", features = ["derive"] }
