@@ -167,7 +167,7 @@ impl<SlicesProvider: EndDbSlicesProvider, C, S> EndDb<SlicesProvider, fp::CMap::
     }
 }
 
-impl<SlicesProvider, GS, SS: SeedSize, C, S> EndDb<SlicesProvider, fp::GOCMap::<GS, SS, C, S>>
+impl<SlicesProvider, GS: GroupSize, SS: SeedSize, C, S> EndDb<SlicesProvider, fp::GOCMap::<C, GS, SS, S>>
     where SlicesProvider: EndDbSlicesProvider
 {
     pub fn with_fpcmap2(slice_provider: SlicesProvider) -> Self {
@@ -270,7 +270,7 @@ impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::CMap::<minimum_redunda
     }
 }
 
-impl<GS, SS, C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::GOCMap::<GS, SS, C, S>>
+impl<GS, SS, C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::GOCMap::<C, GS, SS, S>>
     where C: Coding<Value=u8>,
           SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>,
           ISP: std::hash::Hash + Clone,
@@ -279,12 +279,12 @@ impl<GS, SS, C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::GOCMap::<GS, S
 {
     pub fn build_with_fpcmap2_conf_verifier<BC, LSC, Checker>(
         slice_provider: SlicesProvider,
-        fpcconf: fp::GOCMapConf<GS, SS, BC, LSC, S>,
+        fpcconf: fp::GOCMapConf<BC, LSC, GS, SS, S>,
         verifier: Checker
-    ) -> EndDbBuilder<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, Checker, fp::GOCMap::<GS, SS, C, S>>
+    ) -> EndDbBuilder<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, Checker, fp::GOCMap::<C, GS, SS, S>>
         where BC: BuildCoding<u8, Coding=C>, LSC: fp::LevelSizeChooser+Display+Clone
     {
-        EndDbBuilder::<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, Checker, fp::GOCMap::<GS, SS, C, S>> {
+        EndDbBuilder::<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, Checker, fp::GOCMap::<C, GS, SS, S>> {
             enddb: Self::with_fpcmap2(slice_provider),
             builder: fpcconf.into(),
             verifier
@@ -292,28 +292,28 @@ impl<GS, SS, C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::GOCMap::<GS, S
     }
 
     #[inline]
-    pub fn build_with_fpcmap2_conf<BC, LSC>(slice_provider: SlicesProvider, fpcconf: fp::GOCMapConf<GS, SS, BC, LSC, S>)
-                                              -> EndDbBuilder<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, (), fp::GOCMap::<GS, SS, C, S>>
+    pub fn build_with_fpcmap2_conf<BC, LSC>(slice_provider: SlicesProvider, fpcconf: fp::GOCMapConf<BC, LSC, GS, SS, S>)
+                                              -> EndDbBuilder<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, (), fp::GOCMap::<C, GS, SS, S>>
         where BC: BuildCoding<u8, Coding=C>, LSC: fp::LevelSizeChooser+Display+Clone
     {
         Self::build_with_fpcmap2_conf_verifier(slice_provider, fpcconf, ())
     }
 }
 
-impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::GOCMap::<TwoToPowerBits, TwoToPowerBitsStatic<2>, minimum_redundancy::Coding<u8>>>
+impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBits, TwoToPowerBitsStatic<2>>>
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>,
           ISP: std::hash::Hash + Clone
 {
     #[inline]
     pub fn build_with_fpcmap2_verifier<Checker>(
         slice_provider: SlicesProvider,
-        verifier: Checker) -> EndDbBuilder<SlicesProvider, FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BuildMinimumRedundancy>, Checker, fp::GOCMap::<TwoToPowerBits, TwoToPowerBitsStatic<2>, minimum_redundancy::Coding<u8>>>
+        verifier: Checker) -> EndDbBuilder<SlicesProvider, FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BuildMinimumRedundancy>, Checker, fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBits, TwoToPowerBitsStatic<2>>>
     {
         Self::build_with_fpcmap2_conf_verifier(slice_provider, fp::GOCMapConf::default(), verifier)
     }
 
     #[inline]
-    pub fn build_with_fpcmap2(slice_provider: SlicesProvider) -> EndDbBuilder<SlicesProvider, FPCMap2Builder, (), fp::GOCMap::<TwoToPowerBits, TwoToPowerBitsStatic<2>, minimum_redundancy::Coding<u8>>>
+    pub fn build_with_fpcmap2(slice_provider: SlicesProvider) -> EndDbBuilder<SlicesProvider, FPCMap2Builder, (), fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBits, TwoToPowerBitsStatic<2>>>
     {
         Self::build_with_fpcmap2_conf_verifier(slice_provider, fp::GOCMapConf::default(), ())
     }
