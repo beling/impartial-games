@@ -24,7 +24,7 @@ pub use slices_provider::EndDbSlicesProvider;
 use std::hash::Hash;
 use csf::coding::{BuildCoding, Coding, minimum_redundancy, BuildMinimumRedundancy};
 use ph::BuildSeededHasher;
-use ph::fmph::{GroupSize, SeedSize, TwoToPowerBits, TwoToPowerBitsStatic};
+use ph::fmph::{GroupSize, SeedSize, TwoToPowerBitsStatic};
 
 /// End database - maps position near the end of the game to nimbers.
 /// It is usually divided into slices.
@@ -300,20 +300,20 @@ impl<GS, SS, C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::GOCMap::<C, GS
     }
 }
 
-impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBits, TwoToPowerBitsStatic<2>>>
+impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>>>
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>,
           ISP: std::hash::Hash + Clone
 {
     #[inline]
     pub fn build_with_fpcmap2_verifier<Checker>(
         slice_provider: SlicesProvider,
-        verifier: Checker) -> EndDbBuilder<SlicesProvider, FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BuildMinimumRedundancy>, Checker, fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBits, TwoToPowerBitsStatic<2>>>
+        verifier: Checker) -> EndDbBuilder<SlicesProvider, FPCMap2Builder<TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, BuildMinimumRedundancy>, Checker, fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBitsStatic<4>, TwoToPowerBitsStatic<2>>>
     {
         Self::build_with_fpcmap2_conf_verifier(slice_provider, fp::GOCMapConf::default(), verifier)
     }
 
     #[inline]
-    pub fn build_with_fpcmap2(slice_provider: SlicesProvider) -> EndDbBuilder<SlicesProvider, FPCMap2Builder, (), fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBits, TwoToPowerBitsStatic<2>>>
+    pub fn build_with_fpcmap2(slice_provider: SlicesProvider) -> EndDbBuilder<SlicesProvider, FPCMap2Builder, (), fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>>>
     {
         Self::build_with_fpcmap2_conf_verifier(slice_provider, fp::GOCMapConf::default(), ())
     }

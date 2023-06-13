@@ -4,7 +4,7 @@ use std::fmt;
 #[cfg(feature = "BP128")] use super::bp128delta::ClusterBP128;
 use binout::{AsIs, Serializer};
 pub use csf::{fp, ls};
-use ph::fmph::{SeedSize, TwoToPowerBits, TwoToPowerBitsStatic, GroupSize};
+use ph::fmph::{SeedSize, TwoToPowerBitsStatic, GroupSize};
 
 use std::hash::BuildHasher;
 use crate::enddb::SortedPositionNimberMap;
@@ -253,7 +253,7 @@ where C: SerializableCoding<Value=u8> + GetSize, GS: GroupSize, SS: SeedSize, S:
 }
 
 //#[derive(Default)]
-pub struct FPCMap2Builder<GS = TwoToPowerBits, SS = TwoToPowerBitsStatic<2>, BC = BuildMinimumRedundancy, LSC = fp::OptimalLevelSize, S = BuildDefaultSeededHasher>
+pub struct FPCMap2Builder<GS = TwoToPowerBitsStatic::<4>, SS = TwoToPowerBitsStatic<2>, BC = BuildMinimumRedundancy, LSC = fp::OptimalLevelSize, S = BuildDefaultSeededHasher>
     where GS: GroupSize, SS: SeedSize, LSC: fp::LevelSizeChooser, S: BuildSeededHasher {
     pub conf: fp::GOCMapConf<BC, LSC, GS, SS, S>
 }
@@ -278,7 +278,7 @@ where BC: BuildCoding<u8>, LSC: fmt::Display + fp::LevelSizeChooser, S: BuildSee
 }
 
 impl<BC, LSC, InSliceGamePosition, S, HMS, Coding> CompressedSliceBuilder<HashMap<InSliceGamePosition, u8, HMS>>
-for FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BC, LSC, S>
+for FPCMap2Builder<TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, BC, LSC, S>
     where BC: BuildCoding<u8, Coding=Coding> + Clone,
           Coding: csf::coding::Coding<Value=u8> + csf::coding::SerializableCoding + GetSize,
         LSC: fp::LevelSizeChooser + fmt::Display + Clone,
@@ -286,7 +286,7 @@ for FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BC, LSC, S>
           S: BuildSeededHasher + Clone
 {
 
-    type CompressedSlice = fp::GOCMap::<Coding, TwoToPowerBits, TwoToPowerBitsStatic<2>, S>;
+    type CompressedSlice = fp::GOCMap::<Coding, TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, S>;
 
     #[inline(always)]
     fn construct(&self, src: HashMap<InSliceGamePosition, u8, HMS>) -> Self::CompressedSlice {
@@ -301,14 +301,14 @@ for FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BC, LSC, S>
 }
 
 impl<BC, LSC, InSliceGamePosition, S, Coding> CompressedSliceBuilder<SortedPositionNimberMap<InSliceGamePosition>>
-for FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BC, LSC, S>
+for FPCMap2Builder<TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, BC, LSC, S>
     where BC: BuildCoding<u8, Coding=Coding> + Clone,
           Coding: csf::coding::Coding<Value=u8> + csf::coding::SerializableCoding + GetSize,
           LSC: fp::LevelSizeChooser + fmt::Display + Clone,
           InSliceGamePosition: std::hash::Hash + Clone,
           S: BuildSeededHasher + Clone
 {
-    type CompressedSlice = fp::GOCMap::<Coding, TwoToPowerBits, TwoToPowerBitsStatic<2>, S>;
+    type CompressedSlice = fp::GOCMap::<Coding, TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, S>;
 
     #[inline(always)]
     fn construct(&self, mut src: SortedPositionNimberMap<InSliceGamePosition>) -> Self::CompressedSlice {
