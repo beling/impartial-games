@@ -15,7 +15,7 @@ keywords = [ "game", "impartial", "solver", "cram", "chomp" ]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ph = "0.6"
+ph = "0.7"
 binout = "0.2"
 csf = "0.1"
 bitm = "0.2"
