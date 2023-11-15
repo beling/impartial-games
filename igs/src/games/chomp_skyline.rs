@@ -25,6 +25,21 @@ impl Game for Chomp {
 
     #[inline(always)]
     fn moves_count(&self, p: &u64) -> u16 {
+        let mut p = *p;
+        let mut zeros = 0;  // total number of zeros
+        // TODO let mut zeros = 1; if the least significant 1 is not included in p
+        let mut moves = 0;  // total number of 1-0 pairs
+        while p != 0 {
+            let tz = p.trailing_zeros() as u16;
+            p >>= tz + 1;   // remove trailing zeros and the least significant 1
+            zeros += tz;
+            moves += zeros;
+        }
+        moves - 1
+    }
+
+    /*#[inline(always)]
+    fn moves_count(&self, p: &u64) -> u16 {
         const M1: u64 = (!0x01_01_01_01__01_01_01_01)>>1;
         const M2: u64 = (!0x03_03_03_03__03_03_03_03)>>2;
         const M3: u64 = (!0x07_07_07_07__07_07_07_07)>>3;
@@ -58,7 +73,7 @@ impl Game for Chomp {
         }
 
         moves - 1
-    }
+    }*/
 
     /*fn try_solve_theoretically(&self, position: &Self::Position) -> Option<u8> {
         if self.row(*position, 1) <= 1 {
