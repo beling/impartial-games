@@ -4,7 +4,7 @@ use std::fmt;
 #[cfg(feature = "BP128")] use super::bp128delta::ClusterBP128;
 use binout::{AsIs, Serializer};
 pub use csf::{fp, ls};
-use ph::fmph::{SeedSize, TwoToPowerBits, TwoToPowerBitsStatic, GroupSize};
+use ph::fmph::{SeedSize, TwoToPowerBitsStatic, GroupSize};
 
 use std::hash::BuildHasher;
 use crate::enddb::SortedPositionNimberMap;
@@ -230,7 +230,7 @@ for FPMapBuilder<LSC, CSB, S>
 
 // ------------------ FPCMap2 -----------------
 
-impl<InSliceGamePosition, GS, SS, C, S> NimbersProvider<InSliceGamePosition> for fp::GOCMap::<GS, SS, C, S>
+impl<InSliceGamePosition, GS, SS, C, S> NimbersProvider<InSliceGamePosition> for fp::GOCMap::<C, GS, SS, S>
 where InSliceGamePosition: std::hash::Hash, C: Coding<Value=u8>, GS:GroupSize, SS: SeedSize, S: BuildSeededHasher {
     #[inline(always)]
     fn get_nimber(&self, position: &InSliceGamePosition) -> Option<u8> {
@@ -238,7 +238,7 @@ where InSliceGamePosition: std::hash::Hash, C: Coding<Value=u8>, GS:GroupSize, S
     }
 }
 
-impl<C, GS, SS, S> CompressedSlice for fp::GOCMap::<GS, SS, C, S>
+impl<C, GS, SS, S> CompressedSlice for fp::GOCMap::<C, GS, SS, S>
 where C: SerializableCoding<Value=u8> + GetSize, GS: GroupSize, SS: SeedSize, S: BuildSeededHasher {
 
     #[inline(always)]
@@ -248,19 +248,19 @@ where C: SerializableCoding<Value=u8> + GetSize, GS: GroupSize, SS: SeedSize, S:
 
     #[inline(always)]
     fn write(&self, output: &mut dyn io::Write) -> io::Result<()> {
-        fp::GOCMap::<GS, SS, C, S>::write(&self, output, |o, v| AsIs::write(o, *v))
+        fp::GOCMap::<C, GS, SS, S>::write(&self, output, |o, v| AsIs::write(o, *v))
     }
 }
 
 //#[derive(Default)]
-pub struct FPCMap2Builder<GS: GroupSize = TwoToPowerBits, SS: SeedSize = TwoToPowerBitsStatic<2>, BC = BuildMinimumRedundancy, LSC = fp::OptimalLevelSize, S = BuildDefaultSeededHasher>
-    where LSC: fp::LevelSizeChooser, S: BuildSeededHasher {
-    pub conf: fp::GOCMapConf<GS, SS, BC, LSC, S>
+pub struct FPCMap2Builder<GS = TwoToPowerBitsStatic::<4>, SS = TwoToPowerBitsStatic<2>, BC = BuildMinimumRedundancy, LSC = fp::OptimalLevelSize, S = BuildDefaultSeededHasher>
+    where GS: GroupSize, SS: SeedSize, LSC: fp::LevelSizeChooser, S: BuildSeededHasher {
+    pub conf: fp::GOCMapConf<BC, LSC, GS, SS, S>
 }
 
-impl<GS: GroupSize, SS: SeedSize, BC, LSC, S> From<fp::GOCMapConf<GS, SS, BC, LSC, S>> for FPCMap2Builder<GS, SS, BC, LSC, S>
+impl<GS: GroupSize, SS: SeedSize, BC, LSC, S> From<fp::GOCMapConf<BC, LSC, GS, SS, S>> for FPCMap2Builder<GS, SS, BC, LSC, S>
 where LSC: fp::LevelSizeChooser, S: BuildSeededHasher {
-    fn from(conf: fp::GOCMapConf<GS, SS, BC, LSC, S>) -> Self {
+    fn from(conf: fp::GOCMapConf<BC, LSC, GS, SS, S>) -> Self {
         Self { conf }
     }
 }
@@ -271,14 +271,14 @@ where BC: BuildCoding<u8>, LSC: fmt::Display + fp::LevelSizeChooser, S: BuildSee
         write!(f, "FPGOMap__{}__{}_levels__gr_seed_{}b_size_{}b__h{:X}",
                 self.conf.coding.name(),
                 self.conf.level_size_chooser,
-                Into::<u8>::into(self.conf.bits_per_seed), 
-                Into::<u8>::into(self.conf.bits_per_group),
-               hasher_id(&self.conf.hash_builder))
+                Into::<u8>::into(self.conf.goconf.bits_per_seed), 
+                Into::<u8>::into(self.conf.goconf.bits_per_group),
+               hasher_id(&self.conf.goconf.hash_builder))
     }
 }
 
 impl<BC, LSC, InSliceGamePosition, S, HMS, Coding> CompressedSliceBuilder<HashMap<InSliceGamePosition, u8, HMS>>
-for FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BC, LSC, S>
+for FPCMap2Builder<TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, BC, LSC, S>
     where BC: BuildCoding<u8, Coding=Coding> + Clone,
           Coding: csf::coding::Coding<Value=u8> + csf::coding::SerializableCoding + GetSize,
         LSC: fp::LevelSizeChooser + fmt::Display + Clone,
@@ -286,7 +286,7 @@ for FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BC, LSC, S>
           S: BuildSeededHasher + Clone
 {
 
-    type CompressedSlice = fp::GOCMap::<TwoToPowerBits, TwoToPowerBitsStatic<2>, Coding, S>;
+    type CompressedSlice = fp::GOCMap::<Coding, TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, S>;
 
     #[inline(always)]
     fn construct(&self, src: HashMap<InSliceGamePosition, u8, HMS>) -> Self::CompressedSlice {
@@ -296,19 +296,19 @@ for FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BC, LSC, S>
 
     #[inline(always)]
     fn read(&self, input: &mut dyn io::Read) -> io::Result<Self::CompressedSlice> where Self::CompressedSlice: std::marker::Sized {
-        Self::CompressedSlice::read_with_hasher(input, |i| AsIs::read(i), self.conf.hash_builder.clone())
+        Self::CompressedSlice::read_with_hasher(input, |i| AsIs::read(i), self.conf.goconf.hash_builder.clone())
     }
 }
 
 impl<BC, LSC, InSliceGamePosition, S, Coding> CompressedSliceBuilder<SortedPositionNimberMap<InSliceGamePosition>>
-for FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BC, LSC, S>
+for FPCMap2Builder<TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, BC, LSC, S>
     where BC: BuildCoding<u8, Coding=Coding> + Clone,
           Coding: csf::coding::Coding<Value=u8> + csf::coding::SerializableCoding + GetSize,
           LSC: fp::LevelSizeChooser + fmt::Display + Clone,
           InSliceGamePosition: std::hash::Hash + Clone,
           S: BuildSeededHasher + Clone
 {
-    type CompressedSlice = fp::GOCMap::<TwoToPowerBits, TwoToPowerBitsStatic<2>, Coding, S>;
+    type CompressedSlice = fp::GOCMap::<Coding, TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, S>;
 
     #[inline(always)]
     fn construct(&self, mut src: SortedPositionNimberMap<InSliceGamePosition>) -> Self::CompressedSlice {
@@ -317,7 +317,7 @@ for FPCMap2Builder<TwoToPowerBits, TwoToPowerBitsStatic<2>, BC, LSC, S>
 
     #[inline(always)]
     fn read(&self, input: &mut dyn io::Read) -> io::Result<Self::CompressedSlice> where Self::CompressedSlice: std::marker::Sized {
-        Self::CompressedSlice::read_with_hasher(input, |i| AsIs::read(i), self.conf.hash_builder.clone())
+        Self::CompressedSlice::read_with_hasher(input, |i| AsIs::read(i), self.conf.goconf.hash_builder.clone())
     }
 }
 

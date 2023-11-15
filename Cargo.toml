@@ -1,2 +1,3 @@
 [workspace]
 members = ["igs", "igsolve"]
+resolver = "2"

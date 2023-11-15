@@ -21,7 +21,7 @@ for example
 ```RUSTFLAGS="-C target-cpu=native" cargo install igsolve```
 
 # The results obtained so far
-Here we provide the nimbers calculated using my software.
+Here I provide the nimbers calculated using my software.
 
 ## Cram (under the normal play convention)
 
@@ -42,4 +42,7 @@ Nimbers of most boards no larger than $5 \times 7$ were first given by Martin Sc
 Uiterwijk reported that the $11 \times 5$ board is losing (and thus of nimber 0) in his paper [*Solving Cram Using Combinatorial Game Theory* (Advances in Computer Games: 16th International Conference, ACG 2019, Macao, China, August 11–13, 2019)](https://dl.acm.org/doi/10.1007/978-3-030-65883-0_8).
 I have verified the correctness of all the nimbers in the table with my solver.
 
-
+# Publications and citations
+When using my software for research purposes, please cite the following paper which details the key algorithms used:
+* Piotr Beling, Marek Rogalski, *On pruning search trees of impartial games*, Artificial Intelligence, Volume 283, 2020, 103262, ISSN 0004-3702,
+https://doi.org/10.1016/j.artint.2020.103262
