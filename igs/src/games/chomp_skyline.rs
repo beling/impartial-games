@@ -6,15 +6,26 @@ use std::{fmt, iter::FusedIterator};
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Chomp {
-    rows: u8,
-    cols: u8
+    number_of_cols: u8,
+    number_of_rows: u8
 }
 
 impl Chomp {
+    /// Construct Chomp game played on a board with given size (number of columns and rows).
+    /// Note: `number_of_cols` should be greater or equal to `number_of_rows`, otherwise they are swapped.
+    pub fn new(number_of_cols: u8, number_of_rows: u8) -> Self {
+        assert!(number_of_cols > 0 && number_of_rows > 0 && number_of_cols + number_of_rows <= 64);
+        if number_of_cols < number_of_rows {
+            Self{ number_of_cols: number_of_rows, number_of_rows: number_of_cols }
+        } else {
+            Self{ number_of_cols, number_of_rows }
+        }
+    }
+
     fn normalized(position: u64) -> u64 {
-        let mut neg_mirrored = position.reverse_bits();
-        neg_mirrored >>= neg_mirrored.trailing_zeros()+1;
-        position.min(!neg_mirrored)
+        let mut mirrored = !(position<<1).reverse_bits();
+        mirrored >>= mirrored.trailing_ones()+1;
+        position.min(mirrored)
     }
 
     #[inline(always)]
@@ -53,7 +64,7 @@ impl Game for Chomp {
     }
 
     fn initial_position(&self) -> Self::Position {
-        n_lowest_bits(self.rows) << (self.cols-1)
+        n_lowest_bits(self.number_of_rows) << (self.number_of_cols-1)
     }
 
     /*#[inline(always)]
@@ -146,7 +157,7 @@ impl Iterator for ChompMovesIterator/*<'_>*/ {
             self.number_of_ones -= 1;
             self.ones_mask = n_lowest_bits(self.number_of_ones);
             self.zeros = !self.position & n_lowest_bits(self.one_idx);
-            Some(self.result_template >> self.number_of_ones)
+            Some(Chomp::normalized(self.result_template >> self.number_of_ones))
         } else {
             // goto next 0:
             let zero_idx = self.zeros.trailing_zeros() as i8;
@@ -154,7 +165,7 @@ impl Iterator for ChompMovesIterator/*<'_>*/ {
             self.ones_mask >>= zero_idx - self.zero_idx - 1;
             self.zero_idx = zero_idx;
             self.result_template |= self.position & n_lowest_bits(zero_idx as u8);
-            Some(self.result_template | (self.ones_mask << zero_idx))
+            Some(Chomp::normalized(self.result_template | (self.ones_mask << zero_idx)))
         }
     }
 }
@@ -166,16 +177,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_normalization() {
+        assert_eq!(Chomp::normalized(0b1), 0b1);    // X -> X
+        assert_eq!(Chomp::normalized(0b11), 0b10);  // #/X -> #X
+        assert_eq!(Chomp::normalized(0b10), 0b10);  // #X -> #X
+        assert_eq!(Chomp::normalized(0b1101), 0b1010);
+        assert_eq!(Chomp::normalized(0b1010), 0b1010);
+        assert_eq!(Chomp::normalized(0b1110), 0b1100);
+        assert_eq!(Chomp::normalized(0b1100), 0b1100);
+    }
+
+    #[test]
     fn moves_iterator_for_1010() {
         //   ##     #   ##           #
         //  ##X ->  X   #X   ##X   ##X
         // 1010    11  110   100  1001
         assert_eq!(Chomp::moves_count(0b1010), 4);
         let mut iter = ChompMovesIterator::new(0b1010);
-        assert_eq!(iter.next(), Some(0b11));
-        assert_eq!(iter.next(), Some(0b110));
-        assert_eq!(iter.next(), Some(0b100));
-        assert_eq!(iter.next(), Some(0b1001));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b11)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b110)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b100)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b1001)));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next(), None);
     }
@@ -184,14 +206,14 @@ mod tests {
     fn moves_iterator_for_1100() {
         //  ###     #   ##           #    ##
         //  ##X ->  X   #X   ##X   ##X   ##X
-        // 1010    11  110   100  1001  1010
+        // 1100    11  110   100  1001  1010
         assert_eq!(Chomp::moves_count(0b1100), 5);
         let mut iter = ChompMovesIterator::new(0b1100);
-        assert_eq!(iter.next(), Some(0b11));
-        assert_eq!(iter.next(), Some(0b110));
-        assert_eq!(iter.next(), Some(0b100));
-        assert_eq!(iter.next(), Some(0b1001));
-        assert_eq!(iter.next(), Some(0b1010));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b11)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b110)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b100)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b1001)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b1010)));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next(), None);
     }
@@ -205,9 +227,9 @@ mod tests {
         // 1111    1  11  111
         assert_eq!(Chomp::moves_count(0b1111), 3);
         let mut iter = ChompMovesIterator::new(0b1111);
-        assert_eq!(iter.next(), Some(0b1));
-        assert_eq!(iter.next(), Some(0b11));
-        assert_eq!(iter.next(), Some(0b111));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b1)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b11)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b111)));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next(), None);
     }
@@ -218,8 +240,8 @@ mod tests {
         //  100      1  10
         assert_eq!(Chomp::moves_count(0b100), 2);
         let mut iter = ChompMovesIterator::new(0b100);
-        assert_eq!(iter.next(), Some(0b1));
-        assert_eq!(iter.next(), Some(0b10));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b1)));
+        assert_eq!(iter.next(), Some(Chomp::normalized(0b10)));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next(), None);
     }

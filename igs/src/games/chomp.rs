@@ -65,7 +65,7 @@ impl_serializable_game_for!(Chomp);
 
 impl Chomp {
     /// Construct Chomp game played on a board with given size (number of columns and rows).
-    /// Note: number_of_cols should be greater or equal to number_of_rows, otherwise they are swapped.
+    /// Note: `number_of_cols` should be greater or equal to `number_of_rows`, otherwise they are swapped.
     pub fn new(mut number_of_cols: u8, mut number_of_rows: u8) -> Chomp {
         if number_of_rows > number_of_cols { std::mem::swap(&mut number_of_cols, &mut number_of_rows); }
         let bits_per_row = bits_to_store!(number_of_cols);
