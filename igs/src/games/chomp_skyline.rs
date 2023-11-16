@@ -1,10 +1,34 @@
+use bitm::n_lowest_bits;
+
 pub use crate::game::{Game, SimpleGame};
-use std::fmt;
+use std::{fmt, iter::FusedIterator};
 
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Chomp {
+    rows: u8,
+    cols: u8
+}
 
+impl Chomp {
+    fn normalized(position: u64) -> u64 {
+        let mut neg_mirrored = position.reverse_bits();
+        neg_mirrored >>= neg_mirrored.trailing_zeros()+1;
+        position.min(!neg_mirrored)
+    }
+
+    #[inline(always)]
+    fn moves_count(mut p: u64) -> u16 {
+        let mut zeros = 1;  // total number of zeros (we have one, left-most 0 not included in representation)
+        let mut moves = 0;  // total number of 1-0 pairs
+        while p != 0 {
+            let tz = p.trailing_zeros() as u16;
+            p >>= tz + 1;   // remove trailing zeros and the least significant 1
+            zeros += tz;
+            moves += zeros;
+        }
+        moves - 1
+    }
 }
 
 impl fmt::Display for Chomp {
@@ -25,21 +49,16 @@ impl Game for Chomp {
 
     #[inline(always)]
     fn moves_count(&self, p: &u64) -> u16 {
-        let mut p = *p;
-        let mut zeros = 0;  // total number of zeros
-        // TODO let mut zeros = 1; if the least significant 1 is not included in p
-        let mut moves = 0;  // total number of 1-0 pairs
-        while p != 0 {
-            let tz = p.trailing_zeros() as u16;
-            p >>= tz + 1;   // remove trailing zeros and the least significant 1
-            zeros += tz;
-            moves += zeros;
-        }
-        moves - 1
+        Self::moves_count(*p)
+    }
+
+    fn initial_position(&self) -> Self::Position {
+        n_lowest_bits(self.rows) << (self.cols-1)
     }
 
     /*#[inline(always)]
     fn moves_count(&self, p: &u64) -> u16 {
+        let p = p << 1;
         const M1: u64 = (!0x01_01_01_01__01_01_01_01)>>1;
         const M2: u64 = (!0x03_03_03_03__03_03_03_03)>>2;
         const M3: u64 = (!0x07_07_07_07__07_07_07_07)>>3;
@@ -86,16 +105,75 @@ impl Game for Chomp {
 
 
 
-pub struct ChompMovesIterator<'a> {
-    chomp: &'a Chomp,
+pub struct ChompMovesIterator/*<'a>*/ {
+    //chomp: &'a Chomp,
     position: u64,
-
+    one_idx: u8,  // index of the current 1
+    zero_idx: u8,  // index of the current 0
+    number_of_ones: u8,    // number of ones in range [0, one_idx]
+    ones_mask: u64,    // 0..01..1 with the number of ones in range [zero_idx, one_idx]
+    zeros: u64, // 0s to process with the current 1
+    result_template: u64
 }
 
-impl Iterator for ChompMovesIterator<'_> {
+impl ChompMovesIterator {
+    pub fn new(position: u64) -> Self {
+        let number_of_ones = position.count_ones() as u8;
+        let zero_idx = position.trailing_ones() as u8;
+        let one_idx = position.ilog2() as u8;
+        Self {
+            position,
+            one_idx,
+            zero_idx,
+            number_of_ones,
+            ones_mask: n_lowest_bits(number_of_ones - zero_idx),
+            zeros: !position & n_lowest_bits(one_idx),
+            result_template: (1<<one_idx) | n_lowest_bits(zero_idx), 
+        }
+    }
+}
+
+impl Iterator for ChompMovesIterator/*<'_>*/ {
     type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        if self.zeros == 0 {
+            // goto next 1:
+            let remaining_ones = self.position & n_lowest_bits(self.one_idx);
+            if remaining_ones == 0 { return None; }
+            self.one_idx = remaining_ones.ilog2() as u8;
+            self.result_template = self.position ^ remaining_ones;
+            self.zero_idx = 0;
+            self.number_of_ones -= 1;
+            self.ones_mask = n_lowest_bits(self.number_of_ones);
+            self.zeros = !self.position & n_lowest_bits(self.one_idx);
+            Some(self.result_template >> self.number_of_ones)
+        } else {
+            // goto next 0:
+            let zero_idx = self.zeros.trailing_zeros() as u8;
+            self.ones_mask >>= zero_idx - self.zero_idx;
+            self.zero_idx = zero_idx;
+            self.result_template |= self.position & n_lowest_bits(zero_idx);
+            Some(self.result_template | (self.ones_mask << zero_idx))
+        }
+    }
+}
+
+impl FusedIterator for ChompMovesIterator {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn moves_iterator() {
+        assert_eq!(Chomp::moves_count(0b1010), 4);
+        let mut iter = ChompMovesIterator::new(0b1010);
+        assert_eq!(iter.next(), Some(0b11));
+        assert_eq!(iter.next(), Some(0b110));
+        assert_eq!(iter.next(), Some(0b100));
+        assert_eq!(iter.next(), Some(0b1001));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next(), None);
     }
 }
