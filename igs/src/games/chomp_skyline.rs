@@ -59,7 +59,7 @@ impl Game for Chomp {
     //type NimberSet = u64;
 
     #[inline(always)]
-    fn moves_count(&self, p: &u64) -> u16 {
+    fn moves_count(&self, p: &u64) -> u16 { // TODO try more efficient implementation with pre-calculating for each 1-byte
         Self::moves_count(*p)
     }
 

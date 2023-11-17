@@ -1,6 +1,5 @@
-use std::{collections::HashMap};
-
-use clap::{Args};
+use std::collections::HashMap;
+use clap::Args;
 use igs::{games::cram::{Cram, slices_provider::LimitedColumnsSliceProvider, SmallerComponentsFirst}, enddb::{EndDb, PrintStats, EndDbBuilderForDecomposableGame}, transposition_table::{NimbersProvider, TTSuccinct64, ProtectedTT, bit_mixer::stafford13, cluster_policy::Fifo, NimbersStorer}, game::Game, solver::Solver};
 use crate::{solver::{PruningMethod, print_nimber_of_decomposable, Without}, tt::{TTConf, TTKind}, constdb::ConstDBConf};
 

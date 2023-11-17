@@ -13,6 +13,8 @@ use constdb::ConstDBConf;
 mod cram;
 use cram::CramConf;
 
+mod chomp;
+
 //#[allow(non_camel_case_types)]
 //#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 #[derive(Subcommand)]

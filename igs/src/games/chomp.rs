@@ -15,7 +15,7 @@ pub struct Chomp {
     /// `ones[i]` consists of `i` ones, at positions: `0 * bits_per_row`, `1 * bits_per_row`, ..., `(i-1)*bits_per_row`
     ones: [u64; 17],
 
-    /// `0..01..1` mask with bits_per_row lowest bits set
+    /// `0..01..1` mask with `bits_per_row` lowest bits set
     first_row_mask: u64,
 
     /// `1..10..01..10..` mask that indicates rows with even indices (0, 2, ...)
@@ -24,7 +24,7 @@ pub struct Chomp {
     number_of_cols: u8,
     number_of_rows: u8,
 
-    /// Position is represented by (bit-)array of fields, each is stored at `bits_per_field` bits.
+    /// Position is represented by (bit-)array of fields, each is stored at `bits_per_row` bits.
     bits_per_row: u8
 }
 
