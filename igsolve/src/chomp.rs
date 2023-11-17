@@ -72,7 +72,7 @@ impl ChompConf {
             Without
         );
         print_nimber_of_simple(&mut solver, method);
-        println!("TT size: {}", solver.transposition_table.len());  // TODO move to print_nimber_of_decomposable
-        println!("{}", solver.stats);   // TODO move to print_nimber_of_decomposable
+        println!("TT size: {}", solver.transposition_table.len());  // TODO move to print_nimber_of_simple
+        println!("{}", solver.stats);   // TODO move to print_nimber_of_simple
     }
 }
