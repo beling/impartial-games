@@ -30,7 +30,15 @@ impl Chomp {
 
     #[inline(always)]
     fn moves_count(mut p: u64) -> u16 {
-        let mut zeros = 1;  // total number of zeros (we have one, left-most 0 not included in representation)
+        let mut moves = 0;  // total number of 1-0 pairs
+        let zeros = !(p<<1);
+        while p != 0 {
+            moves += (p & zeros).count_ones() as u16; p >>= 1;
+            moves += (p & zeros).count_ones() as u16; p >>= 1;
+        }
+        moves - 1
+
+        /*let mut zeros = 1;  // total number of zeros (we have one, left-most 0 not included in representation)
         let mut moves = 0;  // total number of 1-0 pairs
         while p != 0 {
             let tz = p.trailing_zeros() as u16;
@@ -38,7 +46,7 @@ impl Chomp {
             zeros += tz;
             moves += zeros;
         }
-        moves - 1
+        moves - 1*/
     }
 }
 

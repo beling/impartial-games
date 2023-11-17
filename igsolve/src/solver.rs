@@ -1,7 +1,7 @@
 use std::{fmt::{Display, Formatter}, time::Instant};
 
 use clap::{ValueEnum};
-use igs::{stats::{StatsCollector, PrintProgress}, game::DecomposableGame, solver::{def::DefDecomposableGameSolver, lvb::LVBDecomposableGameSolver, br::BRDecomposableGameSolver}};
+use igs::{stats::{StatsCollector, PrintProgress}, game::{DecomposableGame, SimpleGame}, solver::{def::{DefDecomposableGameSolver, DefSimpleGameSolver}, lvb::{LVBDecomposableGameSolver, LVBSimpleGameSolver}, br::{BRDecomposableGameSolver, BRSimpleGameSolver}}};
 
 #[derive(ValueEnum, Clone, Debug)]
 pub enum PruningMethod {
@@ -15,6 +15,22 @@ pub struct Without;
 impl StatsCollector for Without {}
 impl Display for Without {
     fn fmt(&self, _: &mut Formatter<'_>) -> std::fmt::Result { Ok(()) }
+}
+
+pub fn print_nimber_of_simple<'a, G, S>(solver: &mut S, method: PruningMethod)
+where G: SimpleGame,
+      S: DefSimpleGameSolver<G> + LVBSimpleGameSolver<G> + BRSimpleGameSolver<G>
+{
+    let now = Instant::now();
+    let nimber = match method {
+        PruningMethod::Def => solver.nimber_of_initial_def(),
+        PruningMethod::Lvb => solver.nimber_of_initial_lvb_report_progress(PrintProgress),
+        PruningMethod::Br => solver.nimber_of_initial_br(),
+        PruningMethod::BrAspSet => solver.nimber_of_initial_br_aspset_report_progress(PrintProgress),
+    };
+    let calc_time = now.elapsed();
+    println!("Nimber of initial position: {nimber}");
+    println!("Calculation time: {calc_time:?}");
 }
 
 pub fn print_nimber_of_decomposable<'a, G, S>(solver: &mut S, method: PruningMethod)

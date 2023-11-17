@@ -211,6 +211,10 @@ impl Chomp {
         true
     }
 
+    /// The number of chocolate squares (including the poisoned one) in the initial position.
+    pub fn board_size(&self) -> u16 {
+        self.number_of_cols as u16 * self.number_of_rows as u16
+    }
 }
 
 pub struct ChompMovesIterator<'a> {

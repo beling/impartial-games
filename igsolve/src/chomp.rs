@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use clap::Args;
 
-use crate::{solver::PruningMethod, tt::{TTConf, TTKind}, constdb::ConstDBConf};
-use igs::{games::chomp, transposition_table::{NimbersProvider, ProtectedTT, NimbersStorer}, game::Game};
+use crate::{solver::{PruningMethod, Without, print_nimber_of_simple}, tt::{TTConf, TTKind}, constdb::ConstDBConf};
+use igs::{games::chomp::{self, FewerBarsFirst}, transposition_table::{NimbersProvider, ProtectedTT, NimbersStorer, TTSuccinct64, bit_mixer::stafford13, cluster_policy::Fifo}, game::Game, solver::Solver};
 
 #[derive(Args, Clone, Copy)]
 pub struct ChompConf {
@@ -28,7 +30,7 @@ impl ChompConf {
 
     fn run_with_cdb<CDB>(self, game: &chomp::Chomp, method: PruningMethod, tt_conf: TTConf, cdb: CDB) 
         where CDB: NimbersProvider<<chomp::Chomp as Game>::Position>,
-    {
+    {   // TODO copied from Cram, should be fixed
         match tt_conf.kind.unwrap_or_else(|| if game.board_size() > 40 { crate::tt::TTKind::Succinct } else { crate::tt::TTKind::HashMap }) {
             TTKind::None => self.run_with_prot_tt_cdb(game, method, (), tt_conf.protect, cdb),
             TTKind::HashMap => self.run_with_prot_tt_cdb(game, method, HashMap::new(), tt_conf.protect, cdb),
@@ -43,12 +45,12 @@ impl ChompConf {
         where
          TT: NimbersProvider<<chomp::Chomp as Game>::Position> + NimbersStorer<<chomp::Chomp as Game>::Position> + igs::dbs::HasLen,
          CDB: NimbersProvider<<chomp::Chomp as Game>::Position>,
-    {
+    {   // TODO copied from Cram, should be fixed
         if protect_tt {
             let min_fields_to_protect = game.board_size().saturating_sub(20);
             let tt = ProtectedTT::new(game, 
-                format!("cram_{}x{}_TT.bin", self.cols, self.rows),
-                |_, p| p.count_ones() as u8 >= min_fields_to_protect,
+                format!("chomp_{}x{}_TT.bin", self.cols, self.rows),
+                |_, p| p.count_ones() as u16 >= min_fields_to_protect,
                 tt);
             self.run_with_tt_cdb(game, method, tt, cdb);
         } else {
@@ -56,20 +58,20 @@ impl ChompConf {
         }
     }
 
-    fn run_with_tt_cdb<TT, CDB>(self, game: &Cram, method: PruningMethod, tt: TT, cdb: CDB) 
+    fn run_with_tt_cdb<TT, CDB>(self, game: &chomp::Chomp, method: PruningMethod, tt: TT, cdb: CDB) 
         where
-         TT: NimbersProvider<<Cram as Game>::Position> + NimbersStorer<<Cram as Game>::Position> + igs::dbs::HasLen,
-         CDB: NimbersProvider<<Cram as Game>::Position>,
+         TT: NimbersProvider<<chomp::Chomp as Game>::Position> + NimbersStorer<<chomp::Chomp as Game>::Position> + igs::dbs::HasLen,
+         CDB: NimbersProvider<<chomp::Chomp as Game>::Position>,
     {
         let mut solver = Solver::new(
             game,
             tt,
             cdb,
             //move_sorter
-            SmallerComponentsFirst{},
+            (), // TODO replace with FewerBarsFirst,
             Without
         );
-        print_nimber_of_decomposable(&mut solver, method);
+        print_nimber_of_simple(&mut solver, method);
         println!("TT size: {}", solver.transposition_table.len());  // TODO move to print_nimber_of_decomposable
         println!("{}", solver.stats);   // TODO move to print_nimber_of_decomposable
     }

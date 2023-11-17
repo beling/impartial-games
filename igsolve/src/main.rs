@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+use chomp::ChompConf;
 use clap::{Parser, Subcommand};
 mod solver;
 use solver::PruningMethod;
@@ -21,6 +22,8 @@ mod chomp;
 pub enum GameConf {
     /// Cram
     Cram(CramConf),
+    /// Chomp
+    Chomp(ChompConf)
 }
 
 #[derive(Parser)]
@@ -45,6 +48,7 @@ pub struct Conf {
 fn main() {
     let conf: Conf = Conf::parse();
     match conf.game {
-        GameConf::Cram(cram_conf) => cram_conf.run(conf.method, conf.tt, conf.cdb)
+        GameConf::Cram(cram_conf) => cram_conf.run(conf.method, conf.tt, conf.cdb),
+        GameConf::Chomp(chomp_conf) => chomp_conf.run(conf.method, conf.tt, conf.cdb),
     }
 }
