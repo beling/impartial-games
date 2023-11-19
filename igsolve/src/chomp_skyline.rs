@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use clap::Args;
 
-use crate::{solver::{PruningMethod, Without, print_nimber_of_simple}, tt::{TTConf, TTKind}, constdb::ConstDBConf};
+use crate::{solver::{PruningMethod, Without, print_nimber_of_simple}, tt::{TTConf, TTKind}, constdb::ConstDBConf, chomp::aproximate_position_num};
 use igs::{games::chomp_skyline, transposition_table::{NimbersProvider, ProtectedTT, NimbersStorer, TTSuccinct64, bit_mixer::stafford13, cluster_policy::Fifo}, game::Game, solver::Solver};
 
 #[derive(Args, Clone, Copy)]
@@ -31,7 +31,7 @@ impl ChompConf {
     fn run_with_cdb<CDB>(self, game: &chomp_skyline::Chomp, method: PruningMethod, tt_conf: TTConf, cdb: CDB) 
         where CDB: NimbersProvider<<chomp_skyline::Chomp as Game>::Position>,
     {   // TODO copied from Cram, should be fixed
-        match tt_conf.kind.unwrap_or_else(|| if self.cols + self.rows > 40 { crate::tt::TTKind::Succinct } else { crate::tt::TTKind::HashMap }) {
+        match tt_conf.kind.unwrap_or_else(|| if aproximate_position_num(self.cols, self.rows) > (1<<28) { crate::tt::TTKind::Succinct } else { crate::tt::TTKind::HashMap }) {
             TTKind::None => self.run_with_prot_tt_cdb(game, method, (), tt_conf.protect, cdb),
             TTKind::HashMap => self.run_with_prot_tt_cdb(game, method, HashMap::new(), tt_conf.protect, cdb),
             TTKind::Succinct => self.run_with_prot_tt_cdb(
