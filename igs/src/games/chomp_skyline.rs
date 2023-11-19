@@ -41,7 +41,7 @@ impl Chomp {
         }
         moves - 1*/
 
-        let mut zeros = 1;  // total number of zeros (we have one, left-most 0 not included in representation)
+        /*let mut zeros = 1;  // total number of zeros (we have one, left-most 0 not included in representation)
         let mut moves = 0;  // total number of 1-0 pairs
         while p != 0 {
             let tz = p.trailing_zeros() as u16;
@@ -49,6 +49,18 @@ impl Chomp {
             //p >>= tz; p >>= 1;   // remove trailing zeros and the least significant 1
             zeros += tz;
             moves += zeros;
+        }
+        moves - 1*/
+
+        let mut zeros = 1;  // total number of zeros (we have one, left-most 0 not included in representation)
+        let mut moves = 0;  // total number of 1-0 pairs
+        while p != 0 {
+            let tz = p.trailing_zeros() as u16;
+            p >>= tz;    // remove trailing zeros
+            let to = p.trailing_ones() as u16;
+            p >>= to;   // remove trailing ones
+            zeros += tz;
+            moves += to*zeros;
         }
         moves - 1
 
