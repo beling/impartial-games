@@ -1,6 +1,5 @@
 #![doc = include_str!("../README.md")]
 
-use chomp::ChompConf;
 use clap::{Parser, Subcommand};
 mod solver;
 use solver::PruningMethod;
@@ -15,6 +14,8 @@ mod cram;
 use cram::CramConf;
 
 mod chomp;
+mod chomp_skyline;
+
 
 //#[allow(non_camel_case_types)]
 //#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -23,7 +24,9 @@ pub enum GameConf {
     /// Cram
     Cram(CramConf),
     /// Chomp
-    Chomp(ChompConf)
+    Chomp(chomp::ChompConf),
+    /// Chomp (alternative, "skyline" model)
+    ChompSL(chomp_skyline::ChompConf)
 }
 
 #[derive(Parser)]
@@ -50,5 +53,6 @@ fn main() {
     match conf.game {
         GameConf::Cram(cram_conf) => cram_conf.run(conf.method, conf.tt, conf.cdb),
         GameConf::Chomp(chomp_conf) => chomp_conf.run(conf.method, conf.tt, conf.cdb),
+        GameConf::ChompSL(chomp_conf) => chomp_conf.run(conf.method, conf.tt, conf.cdb),
     }
 }

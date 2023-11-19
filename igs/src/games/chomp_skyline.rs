@@ -1,24 +1,25 @@
 use bitm::n_lowest_bits;
 
 pub use crate::game::{Game, SimpleGame};
-use std::{fmt, iter::FusedIterator};
+use crate::solver::{StatsCollector, dedicated::BRSolver, Solver, SolverForSimpleGame};
+use std::{fmt, iter::FusedIterator, collections::HashMap};
 
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Chomp {
-    number_of_cols: u8,
-    number_of_rows: u8
+    cols: u8,
+    rows: u8
 }
 
 impl Chomp {
     /// Construct Chomp game played on a board with given size (number of columns and rows).
     /// Note: `number_of_cols` should be greater or equal to `number_of_rows`, otherwise they are swapped.
-    pub fn new(number_of_cols: u8, number_of_rows: u8) -> Self {
-        assert!(number_of_cols > 0 && number_of_rows > 0 && number_of_cols + number_of_rows <= 64);
-        if number_of_cols < number_of_rows {
-            Self{ number_of_cols: number_of_rows, number_of_rows: number_of_cols }
+    pub fn new(cols: u8, rows: u8) -> Self {
+        assert!(cols > 0 && rows > 0 && cols + rows <= 64);
+        if cols < rows {
+            Self{ cols: rows, rows: cols }
         } else {
-            Self{ number_of_cols, number_of_rows }
+            Self{ cols, rows }
         }
     }
 
@@ -72,7 +73,7 @@ impl Game for Chomp {
     }
 
     fn initial_position(&self) -> Self::Position {
-        n_lowest_bits(self.number_of_rows) << (self.number_of_cols-1)
+        n_lowest_bits(self.rows) << (self.cols-1)
     }
 
     /*#[inline(always)]
@@ -122,6 +123,26 @@ impl Game for Chomp {
     }*/
 }
 
+impl SimpleGame for Chomp {
+    type Successors<'s> = ChompMovesIterator/*<'s>*/;
+    type HeuristicallyOrderedSuccessors<'s> = ChompMovesIterator/*<'s>*/;
+
+    fn successors(&self, position: &Self::Position) -> Self::Successors<'_> {
+        ChompMovesIterator::new(*position)
+    }
+
+    fn successors_in_heuristic_ordered(&self, position: &Self::Position) -> Self::HeuristicallyOrderedSuccessors<'_> {
+        ChompMovesIterator::new(*position)
+    }
+
+    fn solver_with_stats<'s, STATS: 's+StatsCollector>(&'s self, stats: STATS) -> Box<dyn SolverForSimpleGame<Game=Self, StatsCollector=STATS> + 's> {
+        Box::new(BRSolver{
+            solver: Solver::new(self, HashMap::new(), (), () /* TODO */, stats)
+        })
+    }
+}
+
+impl_serializable_game_for!(Chomp);
 
 
 pub struct ChompMovesIterator/*<'a>*/ {
