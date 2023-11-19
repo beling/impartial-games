@@ -207,10 +207,11 @@ impl Iterator for ChompMovesIterator/*<'_>*/ {
         } else {
             // goto next 0:
             let zero_idx = self.zeros.trailing_zeros() as i8;
-            self.zeros ^= 1 << zero_idx;
             self.ones_mask >>= zero_idx - self.zero_idx - 1;
             self.zero_idx = zero_idx;
-            self.result_template |= self.position & n_lowest_bits(zero_idx as u8);
+            let zero_mask = 1u64 << zero_idx;
+            self.zeros ^= zero_mask;
+            self.result_template |= self.position & zero_mask.wrapping_sub(1);
             Some(Chomp::normalized(self.result_template | (self.ones_mask << zero_idx)))
         }
     }
