@@ -1,7 +1,7 @@
 use bitm::n_lowest_bits;
 
 pub use crate::game::{Game, SimpleGame};
-use crate::solver::{StatsCollector, dedicated::BRSolver, Solver, SolverForSimpleGame};
+use crate::{solver::{StatsCollector, dedicated::BRSolver, Solver, SolverForSimpleGame}, bit::ExtraBitMethods};
 use std::{fmt, iter::FusedIterator, collections::HashMap};
 
 
@@ -63,6 +63,15 @@ impl Chomp {
             moves += to*zeros;
         }
         moves - 1
+
+        /*let mut moves = p.count_ones() as u16;
+        let zeros = !p;
+        while p != 0 {
+            let to = p.isolate_trailing_one();
+            moves += (zeros & (to - 1)).count_ones() as u16;
+            p ^= to;
+        }
+        moves - 1*/
 
         /*p <<= 1;
         const M1: u64 = (!0x01_01_01_01__01_01_01_01)>>1;
