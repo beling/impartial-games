@@ -68,7 +68,7 @@ impl Chomp {
     /// Note: `number_of_cols` should be greater or equal to `number_of_rows`, otherwise they are swapped.
     pub fn new(mut number_of_cols: u8, mut number_of_rows: u8) -> Chomp {
         if number_of_rows > number_of_cols { std::mem::swap(&mut number_of_cols, &mut number_of_rows); }
-        let bits_per_row = bits_to_store!(number_of_cols);
+        let bits_per_row = bits_to_store(number_of_cols);
         assert!(number_of_rows as u16 * bits_per_row as u16 <= 64);
         let first_row_mask = n_lowest_bits(bits_per_row);
         Chomp {
