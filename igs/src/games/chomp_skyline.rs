@@ -1,7 +1,7 @@
 use bitm::n_lowest_bits;
 
 pub use crate::game::{Game, SimpleGame};
-use crate::{solver::{StatsCollector, dedicated::BRSolver, Solver, SolverForSimpleGame}, bit::ExtraBitMethods};
+use crate::solver::{StatsCollector, dedicated::BRSolver, Solver, SolverForSimpleGame};
 use std::{fmt, iter::FusedIterator, collections::HashMap};
 
 
