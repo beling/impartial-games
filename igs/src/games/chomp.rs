@@ -3,7 +3,7 @@ use crate::bit::repeat_bit_sequence;
 use std::mem::MaybeUninit;
 use std::mem;
 use crate::moves::DifficultEvaluator;
-use crate::solver::dedicated::BRSolver;
+use crate::solver::dedicated::DefSolver;
 use crate::solver::{SolverForSimpleGame, Solver, StatsCollector};
 use std::collections::HashMap;
 use std::fmt;
@@ -328,7 +328,7 @@ impl SimpleGame for Chomp {
     }
 
     fn solver_with_stats<'s, STATS: 's+StatsCollector>(&'s self, stats: STATS) -> Box<dyn SolverForSimpleGame<Game=Self, StatsCollector=STATS> + 's> {
-        Box::new(BRSolver{
+        Box::new(DefSolver{
             solver: Solver::new(self, HashMap::new(), (), FewerBarsFirst{}, stats)
         })
     }

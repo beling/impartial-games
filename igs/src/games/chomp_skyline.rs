@@ -1,7 +1,7 @@
 use bitm::n_lowest_bits;
 
 pub use crate::game::{Game, SimpleGame};
-use crate::solver::{StatsCollector, dedicated::BRSolver, Solver, SolverForSimpleGame};
+use crate::solver::{StatsCollector, dedicated::DefSolver, Solver, SolverForSimpleGame};
 use std::{fmt, iter::FusedIterator, collections::HashMap};
 
 
@@ -73,32 +73,30 @@ impl Chomp {
         }
         moves - 1*/
 
-        /*p <<= 1;
-        const M1: u64 = (!0x01_01_01_01__01_01_01_01)>>1;
+        /*const M1: u64 = (!0x01_01_01_01__01_01_01_01)>>1;
         const M2: u64 = (!0x03_03_03_03__03_03_03_03)>>2;
         const M3: u64 = (!0x07_07_07_07__07_07_07_07)>>3;
         const M4: u64 = (!0x0F_0F_0F_0F__0F_0F_0F_0F)>>4;
         const M5: u64 = (!0x1F_1F_1F_1F__1F_1F_1F_1F)>>5;
         const M6: u64 = (!0x3F_3F_3F_3F__3F_3F_3F_3F)>>6;
         const M7: u64 = (!0x7F_7F_7F_7F__7F_7F_7F_7F)>>7;
-        let mut ones = p;
-        let zeros = !ones;
+        let zeros = !(p<<1);
         let mut moves = // here we count 1-0 pairs inside each byte
-            ((ones>>1) & (zeros&M1)).count_ones() as u16 +
-            ((ones>>2) & (zeros&M2)).count_ones() as u16 +
-            ((ones>>3) & (zeros&M3)).count_ones() as u16 +
-            ((ones>>4) & (zeros&M4)).count_ones() as u16 +
-            ((ones>>5) & (zeros&M5)).count_ones() as u16 +
-            ((ones>>6) & (zeros&M6)).count_ones() as u16 +
-            ((ones>>7) & (zeros&M7)).count_ones() as u16;
-        ones >>= 8;
-        if ones != 0 {
+            (p & (zeros&M1)).count_ones() as u16 +
+            ((p>>1) & (zeros&M2)).count_ones() as u16 +
+            ((p>>2) & (zeros&M3)).count_ones() as u16 +
+            ((p>>3) & (zeros&M4)).count_ones() as u16 +
+            ((p>>4) & (zeros&M5)).count_ones() as u16 +
+            ((p>>5) & (zeros&M6)).count_ones() as u16 +
+            ((p>>6) & (zeros&M7)).count_ones() as u16;
+        p >>= 7;
+        if p != 0 {
             let mut total_zeros = (zeros & 0xFF).count_ones() as u16;
             loop {
-                let new_ones = (ones & 0xFF).count_ones() as u16;
+                let new_ones = (p & 0xFF).count_ones() as u16;
                 moves += total_zeros * new_ones;
-                ones >>= 8;
-                if ones == 0 { break }
+                p >>= 8;
+                if p == 0 { break }
                 total_zeros += 8 - new_ones;
             }
         }
@@ -153,7 +151,7 @@ impl SimpleGame for Chomp {
     }
 
     fn solver_with_stats<'s, STATS: 's+StatsCollector>(&'s self, stats: STATS) -> Box<dyn SolverForSimpleGame<Game=Self, StatsCollector=STATS> + 's> {
-        Box::new(BRSolver{
+        Box::new(DefSolver{
             solver: Solver::new(self, HashMap::new(), (), () /* TODO */, stats)
         })
     }
@@ -232,6 +230,12 @@ mod tests {
         assert_eq!(Chomp::normalized(0b1010), 0b1010);
         assert_eq!(Chomp::normalized(0b1110), 0b1100);
         assert_eq!(Chomp::normalized(0b1100), 0b1100);
+    }
+
+    #[test]
+    fn test_move_count() {
+        assert_eq!(Chomp::moves_count(0b1_00000_00000_00000_00000_00000_00000), 30);
+        assert_eq!(Chomp::moves_count(0b1_00000_00000_00000_1_00000_00000_00000), 31 + 16 - 1);
     }
 
     #[test]

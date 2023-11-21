@@ -18,7 +18,7 @@ pub struct ChompConf {
 
 impl ChompConf {
     pub fn run(self, method: Option<PruningMethod>, tt_conf: TTConf, cdb: ConstDBConf) {
-        let method = method.unwrap_or(PruningMethod::Br);
+        let method = method.unwrap_or(PruningMethod::Def);
         println!("---=== Chomp {}x{} {:?} ===---", self.cols, self.rows, method);
         let game = chomp_skyline::Chomp::new(self.cols, self.rows);
         if cdb.segments == 0 {
