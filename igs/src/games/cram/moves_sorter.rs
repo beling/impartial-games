@@ -1,11 +1,11 @@
 pub use crate::game::Game;
-use crate::moves::{DifficultEvaluator};
+use crate::moves::DifficultEvaluator;
 use crate::enddb::EndDb;
 use super::Cram;
 
-/// Implements DifficultEvaluator for Cram.
-/// This evaluator works well with BBMapEndDb<Cram>.
-/// It also should be constructed from BBMapEndDb<Cram>, after construction of all slices of end db.
+/// Implements `DifficultEvaluator` for `Cram`.
+/// This evaluator requires and works well with `EndDb`.
+/// It also should be constructed from `EndDb`, after construction of all slices of end db.
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct CramDifficultEvaluator {
     /// Bits of the position representation that lies outside the mask increase difficult.

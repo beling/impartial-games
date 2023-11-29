@@ -2,7 +2,7 @@ use bitm::n_lowest_bits;
 use crate::bit::ExtraBitMethods;
 
 pub trait WithLowest {
-    /// Construct the set which includes n the lowest nimbers, i.e. {0, 1, ..., n-1}.
+    /// Construct the set which includes the `n` lowest nimbers, i.e. *{0, 1, ..., n-1}*.
     fn with_lowest(n: u16) -> Self;
 }
 
@@ -34,7 +34,7 @@ pub trait NimberSet: Sized + WithLowest {
     /// Returns the intersection of self and other.
     fn intersected_with(&self, other: &Self) -> Self;
 
-    /// Construct the set which includes all the nimbers upto n, i.e. {0, 1, ..., n}, where n is the largest element of self.
+    /// Construct the set which includes all the nimbers upto `n`, i.e. *{0, 1, ..., n}*, where `n` is the largest element of self.
     fn upto_largest(&self) -> Self;
 
     /// Return (bit-)set consisted of all values from self, each xored with nimber.
