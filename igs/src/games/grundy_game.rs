@@ -71,6 +71,17 @@ impl Iterator for GrundyGameMovesIterator {
             result
         })
     }
+
+    #[inline] fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.len();
+        (len, Some(len))
+    }
+}
+
+impl ExactSizeIterator for GrundyGameMovesIterator {
+    #[inline] fn len(&self) -> usize {
+        ((self.0[1] + 1 - self.0[0]) / 2) as usize
+    }
 }
 
 impl FusedIterator for GrundyGameMovesIterator {}
@@ -150,8 +161,11 @@ mod tests {
         assert_eq!(inital_pos, 3);
         assert_eq!(g.moves_count(&inital_pos), 2);
         let mut s = g.successors(&inital_pos);
+        assert_eq!(s.len(), 2);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [2]);
+        assert_eq!(s.len(), 1);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1]);
+        assert_eq!(s.len(), 0);
         assert_eq!(s.next(), None);
     }
 
@@ -162,9 +176,13 @@ mod tests {
         assert_eq!(inital_pos, 5);
         assert_eq!(g.moves_count(&inital_pos), 3);
         let mut s = g.successors(&inital_pos);
+        assert_eq!(s.len(), 3);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [4]);
+        assert_eq!(s.len(), 2);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [3]);
+        assert_eq!(s.len(), 1);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1, 2]);
+        assert_eq!(s.len(), 0);
         assert_eq!(s.next(), None);
     }
 
@@ -175,9 +193,13 @@ mod tests {
         assert_eq!(inital_pos, 6);
         assert_eq!(g.moves_count(&inital_pos), 3);
         let mut s = g.successors(&inital_pos);
+        assert_eq!(s.len(), 3);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [5]);
+        assert_eq!(s.len(), 2);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [4]);
+        assert_eq!(s.len(), 1);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1, 3]);
+        assert_eq!(s.len(), 0);
         assert_eq!(s.next(), None);
     }
 
@@ -188,10 +210,15 @@ mod tests {
         assert_eq!(inital_pos, 7);
         assert_eq!(g.moves_count(&inital_pos), 4);
         let mut s = g.successors(&inital_pos);
+        assert_eq!(s.len(), 4);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [6]);
+        assert_eq!(s.len(), 3);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [5]);
+        assert_eq!(s.len(), 2);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1, 4]);
+        assert_eq!(s.len(), 1);
         assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [2, 3]);
+        assert_eq!(s.len(), 0);
         assert_eq!(s.next(), None);
     }
 }
