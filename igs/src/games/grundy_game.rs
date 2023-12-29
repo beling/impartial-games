@@ -66,7 +66,7 @@ impl Iterator for GrundyGameMovesIterator {
             let mut result = self.0;
             self.0[1] -= 1;
             self.0[0] += 1;
-            if result[0] <= 1 { return [result[1], 0]; }
+            if result[0] <= 1 { return [result[1], u16::MAX]; }
             result[0] -= 1;
             result
         })
@@ -81,10 +81,10 @@ impl Iterator for GrundyGameComponentsIterator {
     type Item = u16;
 
     fn next(&mut self) -> Option<Self::Item> {
-        (self.0[0] != 0).then(|| {
+        (self.0[0] != u16::MAX).then(|| {
             let result = self.0[0];
             self.0[0] = self.0[1];
-            self.0[1] = 0;
+            self.0[1] = u16::MAX;
             result
         })
     }
@@ -97,7 +97,7 @@ impl Iterator for GrundyGameComponentsIterator {
 
 impl ExactSizeIterator for GrundyGameComponentsIterator {
     #[inline] fn len(&self) -> usize {
-        (self.0[0] != 0) as usize + (self.0[1] != 0) as usize
+        (self.0[0] != u16::MAX) as usize + (self.0[1] != u16::MAX) as usize
     }
 }
 
