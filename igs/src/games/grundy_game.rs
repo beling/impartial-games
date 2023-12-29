@@ -54,7 +54,7 @@ pub struct GrundyGameMovesIterator([u16; 2]);
 
 impl GrundyGameMovesIterator {
     pub fn new(position: u16) -> Self {
-        Self([0, position.saturating_sub(1)])
+        Self([0, position])
     }
 }
 
@@ -62,9 +62,9 @@ impl Iterator for GrundyGameMovesIterator {
     type Item = [u16; 2];
 
     #[inline] fn next(&mut self) -> Option<Self::Item> {
-        (self.0[0] <= self.0[1]).then(|| {
-            let mut result = self.0;
+        (self.0[0] < self.0[1]).then(|| {
             self.0[1] -= 1;
+            let mut result = self.0;
             self.0[0] += 1;
             if result[0] <= 1 { return [result[1], u16::MAX]; }
             result[0] -= 1;
@@ -107,11 +107,11 @@ impl FusedIterator for GrundyGameComponentsIterator {}
 mod tests {
     use super::*;
 
-    fn test_zero_game(g0: GrundyGame) {
-        let inital_pos = g0.initial_position();
+    fn test_zero_game(g: GrundyGame) {
+        let inital_pos = g.initial_position();
         assert_eq!(inital_pos, 0);
-        assert_eq!(g0.moves_count(&inital_pos), 0);
-        assert_eq!(g0.successors(&inital_pos).next(), None);
+        assert_eq!(g.moves_count(&inital_pos), 0);
+        assert_eq!(g.successors(&inital_pos).next(), None);
     }
 
     #[test]
@@ -123,24 +123,75 @@ mod tests {
 
     #[test]
     fn grundy3() {
-        let g3 = GrundyGame(3);
-        let inital_pos = g3.initial_position();
+        let g = GrundyGame(3);
+        let inital_pos = g.initial_position();
         assert_eq!(inital_pos, 1);
-        assert_eq!(g3.moves_count(&inital_pos), 1);
-        let mut s = g3.successors(&inital_pos);
-        assert_eq!(g3.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [0]);
+        assert_eq!(g.moves_count(&inital_pos), 1);
+        let mut s = g.successors(&inital_pos);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [0]);
+        assert_eq!(s.next(), None);
+    }
+
+    #[test]
+    fn grundy4() {
+        let g = GrundyGame(4);
+        let inital_pos = g.initial_position();
+        assert_eq!(inital_pos, 2);
+        assert_eq!(g.moves_count(&inital_pos), 1);
+        let mut s = g.successors(&inital_pos);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1]);
         assert_eq!(s.next(), None);
     }
 
     #[test]
     fn grundy5() {
-        let g5 = GrundyGame(5);
-        let inital_pos = g5.initial_position();
+        let g = GrundyGame(5);
+        let inital_pos = g.initial_position();
         assert_eq!(inital_pos, 3);
-        assert_eq!(g5.moves_count(&inital_pos), 2);
-        let mut s = g5.successors(&inital_pos);
-        assert_eq!(g5.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [2]);
-        assert_eq!(g5.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1]);
+        assert_eq!(g.moves_count(&inital_pos), 2);
+        let mut s = g.successors(&inital_pos);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [2]);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1]);
+        assert_eq!(s.next(), None);
+    }
+
+    #[test]
+    fn grundy7() {
+        let g = GrundyGame(7);
+        let inital_pos = g.initial_position();
+        assert_eq!(inital_pos, 5);
+        assert_eq!(g.moves_count(&inital_pos), 3);
+        let mut s = g.successors(&inital_pos);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [4]);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [3]);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1, 2]);
+        assert_eq!(s.next(), None);
+    }
+
+    #[test]
+    fn grundy8() {
+        let g = GrundyGame(8);
+        let inital_pos = g.initial_position();
+        assert_eq!(inital_pos, 6);
+        assert_eq!(g.moves_count(&inital_pos), 3);
+        let mut s = g.successors(&inital_pos);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [5]);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [4]);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1, 3]);
+        assert_eq!(s.next(), None);
+    }
+
+    #[test]
+    fn grundy9() {
+        let g = GrundyGame(9);
+        let inital_pos = g.initial_position();
+        assert_eq!(inital_pos, 7);
+        assert_eq!(g.moves_count(&inital_pos), 4);
+        let mut s = g.successors(&inital_pos);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [6]);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [5]);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [1, 4]);
+        assert_eq!(g.decompose(&s.next().unwrap()).collect::<Vec<_>>(), [2, 3]);
         assert_eq!(s.next(), None);
     }
 }
