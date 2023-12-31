@@ -9,4 +9,4 @@
 *  An [endgame database](https://en.wikipedia.org/wiki/Endgame_tablebase) that uses very little space thanks to methods based on [perfect hashing](https://en.wikipedia.org/wiki/Perfect_hash_function), [huffman compression](https://en.wikipedia.org/wiki/Huffman_coding) or integer compression.
 *  Game-specific methods, such as heuristic move sorting.
 
-`igs` has built-in support for the following games: [Cram](<https://en.wikipedia.org/wiki/Cram_(game)>) and [Chomp](https://en.wikipedia.org/wiki/Chomp). Adding support for other games comes down to implementing the appropriate trait.
+`igs` has built-in support for the following games: [Cram](<https://en.wikipedia.org/wiki/Cram_(game)>), [Chomp](https://en.wikipedia.org/wiki/Chomp) (2 models), [Grundy's game](https://en.wikipedia.org/wiki/Grundy%27s_game). Adding support for other games comes down to implementing the appropriate trait.
