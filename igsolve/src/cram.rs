@@ -4,7 +4,7 @@ use igs::{games::cram::{Cram, slices_provider::LimitedColumnsSliceProvider, Smal
 use crate::{solver::{PruningMethod, print_nimber_of_decomposable, Without}, tt::{TTConf, TTKind}, constdb::ConstDBConf};
 
 #[derive(Args, Clone, Copy)]
-pub struct CramConf {
+pub struct Conf {
     /// Number of rows
     #[arg(short='r', long)]
     rows: u8,
@@ -18,7 +18,7 @@ pub struct CramConf {
     edb_cols: u8
 }
 
-impl CramConf {
+impl Conf {
     pub fn run(self, method: Option<PruningMethod>, tt_conf: TTConf, cdb: ConstDBConf) {
         let method = method.unwrap_or(PruningMethod::BrAspSet);
         println!("---=== Cram {}x{} {:?} ===---", self.cols, self.rows, method);

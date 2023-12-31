@@ -11,22 +11,23 @@ mod constdb;
 use constdb::ConstDBConf;
 
 mod cram;
-use cram::CramConf;
-
 mod chomp;
 mod chomp_skyline;
+mod grundy_game;
 
 
 //#[allow(non_camel_case_types)]
 //#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 #[derive(Subcommand)]
 pub enum GameConf {
-    /// Cram
-    Cram(CramConf),
-    /// Chomp
-    Chomp(chomp::ChompConf),
-    /// Chomp (alternative, "skyline" model)
-    ChompSL(chomp_skyline::ChompConf)
+    /// solve Cram
+    Cram(cram::Conf),
+    /// solve Chomp
+    Chomp(chomp::Conf),
+    /// solve Chomp using alternative, "skyline" model
+    ChompSL(chomp_skyline::Conf),
+    /// solve Grundy's game
+    Grundy(grundy_game::Conf),
 }
 
 #[derive(Parser)]
@@ -54,5 +55,6 @@ fn main() {
         GameConf::Cram(cram_conf) => cram_conf.run(conf.method, conf.tt, conf.cdb),
         GameConf::Chomp(chomp_conf) => chomp_conf.run(conf.method, conf.tt, conf.cdb),
         GameConf::ChompSL(chomp_conf) => chomp_conf.run(conf.method, conf.tt, conf.cdb),
+        GameConf::Grundy(grundy_conf) => grundy_conf.run(conf.method, conf.tt, conf.cdb),
     }
 }

@@ -1,6 +1,6 @@
-use std::iter::FusedIterator;
+use std::{iter::FusedIterator, collections::HashMap};
 
-use crate::game::{Game, DecomposableGame};
+use crate::{game::{Game, DecomposableGame}, solver::{dedicated::DefSolver, Solver}};
 
 /// Grundy's game with associated initial position.
 /// 
@@ -9,7 +9,7 @@ use crate::game::{Game, DecomposableGame};
 /// take turn splitting a single heap into two heaps of different sizes.
 /// See: <https://en.wikipedia.org/wiki/Grundy%27s_game>
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct GrundyGame(u16);
+pub struct GrundyGame(pub u16);
 
 impl Game for GrundyGame {
     type Position = u16;
@@ -45,9 +45,11 @@ impl DecomposableGame for GrundyGame {
         GrundyGameComponentsIterator(*position)
     }
 
-    fn solver_with_stats<'s, STATS: 's+crate::solver::StatsCollector>(&'s self, stats: STATS) -> Box<dyn crate::solver::SolverForDecomposableGame<Game=Self, StatsCollector=STATS> + 's> {
-        todo!()
+    fn solver_with_stats<'s, STATS: 's+crate::solver::StatsCollector>(&'s self, stats: STATS) -> Box<dyn crate::solver::SolverForDecomposableGame<Game=Self, StatsCollector=STATS> + 's>
+    {
+        Box::new(DefSolver{solver: Solver::new(self, HashMap::new(), (), (), stats)})
     }
+    
 }
 
 pub struct GrundyGameMovesIterator([u16; 2]);

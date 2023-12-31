@@ -6,7 +6,7 @@ use crate::{solver::{PruningMethod, Without, print_nimber_of_simple}, tt::{TTCon
 use igs::{games::chomp_skyline, transposition_table::{NimbersProvider, ProtectedTT, NimbersStorer, TTSuccinct64, bit_mixer::stafford13, cluster_policy::Fifo}, game::Game, solver::Solver};
 
 #[derive(Args, Clone, Copy)]
-pub struct ChompConf {
+pub struct Conf {
     /// Number of rows
     #[arg(short='r', long)]
     rows: u8,
@@ -16,7 +16,7 @@ pub struct ChompConf {
     cols: u8,
 }
 
-impl ChompConf {
+impl Conf {
     pub fn run(self, method: Option<PruningMethod>, tt_conf: TTConf, cdb: ConstDBConf) {
         let method = method.unwrap_or(PruningMethod::Def);
         println!("---=== Chomp {}x{} {:?} ===---", self.cols, self.rows, method);
@@ -24,7 +24,7 @@ impl ChompConf {
         if cdb.segments == 0 {
             self.run_with_cdb(&game, method, tt_conf, ())
         } else {
-            todo!()
+            todo!("end-db is not yet supported for Chomp")
         }
     }
 
