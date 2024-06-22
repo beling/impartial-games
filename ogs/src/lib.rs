@@ -1,5 +1,6 @@
 mod set;
 mod game;
+mod stats;
 
 mod naive;
 
