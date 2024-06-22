@@ -16,4 +16,5 @@ keywords = [ "game", "octal", "impartial", "solver"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ogs = { version="0.1", path = "../ogs" }
 clap = { version="4.0", features = ["derive"] }
