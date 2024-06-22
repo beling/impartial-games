@@ -1,34 +1,51 @@
+use crate::stats::NimberStats;
 use crate::Game;
 use crate::BitSet;
 use crate::SolverEvent;
 
-pub struct NaiveSolver<S> {
+struct Split {
+    r: [u64; 1<<(16-6)],
+    c: [u64; 1<<(16-6)],
+    r_positions: Vec<usize>,
+}
+
+impl Default for Split {
+    fn default() -> Self {
+        let mut r = [0; 1<<(16-6)];
+        r[0] = 1;   // adds 0 to r
+        Self { r, c: [0; 1<<(16-6)], r_positions: Default::default() }
+    }
+}
+
+pub struct RCSolver<S> {
     game: Game,
     nimbers: Vec<u16>,
+    nimber: NimberStats,
+    split: Split,
     pub stats: S
 }
 
-impl<S> NaiveSolver<S> {
+impl<S> RCSolver<S> {
     pub fn with_stats(game: Game, stats: S) -> Self {
-        Self { game, nimbers: Vec::new(), stats }
+        Self { game, nimbers: Vec::new(), nimber: Default::default(), stats, split: Default::default() }
     }
 
     pub fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
-        Self { game, nimbers: Vec::with_capacity(capacity), stats }
+        Self { game, nimbers: Vec::with_capacity(capacity), nimber: Default::default(), stats, split: Default::default() }
     }
 }
 
-impl NaiveSolver<()> {
+impl RCSolver<()> {
     pub fn new(game: Game) -> Self {
-        Self { game, nimbers: Vec::new(), stats: () }
+        Self { game, nimbers: Vec::new(), nimber: Default::default(), stats: (), split: Default::default() }
     }
 
     pub fn with_capacity(game: Game, capacity: usize) -> Self {
-        Self { game, nimbers: Vec::with_capacity(capacity), stats: () }
+        Self { game, nimbers: Vec::with_capacity(capacity), nimber: Default::default(), stats: (), split: Default::default() }
     }
 }
 
-impl<S: SolverEvent> Iterator for NaiveSolver<S> {
+impl<S: SolverEvent> Iterator for RCSolver<S> {
     type Item = u16;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -45,6 +62,7 @@ impl<S: SolverEvent> Iterator for NaiveSolver<S> {
             }
         }
         let result = option_nimbers.mex();
+        self.nimber.count(result);
         self.nimbers.push(result);
         Some(result)
     }

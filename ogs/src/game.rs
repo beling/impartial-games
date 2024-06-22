@@ -1,4 +1,4 @@
-use crate::BitSet;
+use crate::{BitSet, SolverEvent};
 
 use std::str::FromStr;
 
@@ -36,6 +36,21 @@ impl Game {
         }
         Some(result)
     }
+
+    #[inline] pub fn can_take_all(&self, n: usize) -> bool {
+        self.taking_all.try_get_bit(n).unwrap_or(false)
+    }
+
+    pub(crate) fn consider_taking<S: SolverEvent>(&self, nimbers: &[u16], option_nimbers: &mut [u64; 1<<(16-6)], stats: &mut S) {
+        let n = nimbers.len();
+        if self.can_take_all(n) { option_nimbers.set_nimber(0) }
+        for t in &self.taking {
+            let t = *t as usize;
+            if t >= n { break }
+            option_nimbers.set_nimber(nimbers[n-t]);
+            stats.take_option();
+        }
+    }
 }
 
 impl FromStr for Game {
@@ -43,11 +58,5 @@ impl FromStr for Game {
     
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::from_ascii(s.as_bytes()).ok_or("game description must be in format [X.]OOO... where X is 0 or 4 and (up to 255) Os are octal digits")
-    }
-}
-
-impl Game {
-    #[inline] pub fn can_take_all(&self, n: usize) -> bool {
-        self.taking_all.try_get_bit(n).unwrap_or(false)
     }
 }

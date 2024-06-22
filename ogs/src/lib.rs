@@ -3,6 +3,7 @@ mod game;
 mod stats;
 
 mod naive;
+mod rc;
 
 pub use set::BitSet;
 pub use game::Game;
