@@ -3,17 +3,64 @@ use crate::Game;
 use crate::BitSet;
 use crate::SolverEvent;
 
-struct Split {
+pub struct RCSplit {
     r: [u64; 1<<(16-6)],
     c: [u64; 1<<(16-6)],
+    max_c: u16, // largest nimber in c
     r_positions: Vec<usize>,
 }
 
-impl Default for Split {
+impl Default for RCSplit {
     fn default() -> Self {
         let mut r = [0; 1<<(16-6)];
         r[0] = 1;   // adds 0 to r
-        Self { r, c: [0; 1<<(16-6)], r_positions: Default::default() }
+        Self { r, c: [0; 1<<(16-6)], max_c: 0, r_positions: Default::default() }
+    }
+}
+
+impl RCSplit {
+    pub fn can_add_to_c(&self, nimber: u16) -> bool {
+        for v in 1..=self.max_c {
+            if self.c.get_nimber(v) && self.c.get_nimber(nimber ^ v) {
+                return false;
+            }
+        }
+        true
+    }
+
+    #[inline] pub fn add_to_c(&mut self, nimber: u16) {
+        self.c.set_nimber(nimber);
+        if nimber > self.max_c { self.max_c = nimber }
+    }
+
+    #[inline] pub fn add_to_r(&mut self, nimber: u16) {
+        self.r.set_nimber(nimber);
+    }
+
+    #[inline] pub fn classify(&mut self, nimber: u16) {
+        if self.can_add_to_c(nimber) {
+            self.add_to_c(nimber)
+        } else {
+            self.add_to_r(nimber)
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.c.fill(0);
+        self.r.fill(0);
+        self.r[0] = 1;
+        self.max_c = 0;
+        self.r_positions.clear();
+    }
+
+    pub fn rebuild(&mut self, stats: &NimberStats, nimbers: &[u16]) {
+        self.clear();
+        for nimber in stats.nimbers_from_most_common() { self.classify(nimber); }
+        for (position, nimber) in nimbers.iter().enumerate() {
+            if self.r.get_nimber(*nimber) {
+                self.r_positions.push(position);
+            }
+        }
     }
 }
 
@@ -21,7 +68,7 @@ pub struct RCSolver<S> {
     game: Game,
     nimbers: Vec<u16>,
     nimber: NimberStats,
-    split: Split,
+    split: RCSplit,
     pub stats: S
 }
 
