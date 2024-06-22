@@ -40,7 +40,7 @@ impl<S: SolverEvent> Iterator for NaiveSolver<S> {
             if b >= n { break }
             let after_take = n - b;
             for i in 1 .. after_take/2 + 1 {
-                option_nimbers.set_nimber(self.nimbers[i] ^ self.nimbers[after_take-i]);
+                option_nimbers.add_nimber(self.nimbers[i] ^ self.nimbers[after_take-i]);
                 self.stats.break_option();
             }
         }

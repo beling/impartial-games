@@ -2,7 +2,7 @@ use crate::{BitSet, SolverEvent};
 
 use std::str::FromStr;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Game {
     pub taking_all: [u64; 4],   // set
     pub taking: Vec<u8>,
@@ -30,7 +30,7 @@ impl Game {
         for c in s {
             position = position.checked_add(1)?;
             let oct = Self::parse_octal(*c)?;
-            if oct & 1 != 0 { result.taking_all.set_nimber(position as u16) }
+            if oct & 1 != 0 { result.taking_all.add_nimber(position as u16) }
             if oct & 2 != 0 { result.taking.push(position) }
             if oct & 4 != 0 { result.breaking.push(position) }
         }
@@ -43,11 +43,11 @@ impl Game {
 
     pub(crate) fn consider_taking<S: SolverEvent>(&self, nimbers: &[u16], option_nimbers: &mut [u64; 1<<(16-6)], stats: &mut S) {
         let n = nimbers.len();
-        if self.can_take_all(n) { option_nimbers.set_nimber(0) }
+        if self.can_take_all(n) { option_nimbers.add_nimber(0) }
         for t in &self.taking {
             let t = *t as usize;
             if t >= n { break }
-            option_nimbers.set_nimber(nimbers[n-t]);
+            option_nimbers.add_nimber(nimbers[n-t]);
             stats.take_option();
         }
     }

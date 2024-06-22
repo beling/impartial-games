@@ -10,3 +10,4 @@ pub use game::Game;
 pub use stats::{SolverEvent, SolverIterations};
 
 pub use naive::NaiveSolver;
+pub use rc::RCSolver;

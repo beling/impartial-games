@@ -6,9 +6,8 @@ pub trait BitSet {
     fn mex(&self) -> u16;
 
     unsafe fn set_nimber_unchecked(&mut self, nimber: u16);
-    fn set_nimber(&mut self, nimber: u16);
-    fn get_nimber(&self, nimber: u16) -> bool;
-    fn try_get_nimber(&self, bit_nr: u16) -> Option<bool>;
+    fn add_nimber(&mut self, nimber: u16);
+    fn contain_nimber(&self, nimber: u16) -> bool;
 
     unsafe fn set_bit_unchecked(&mut self, bit_nr: usize);
     fn set_bit(&mut self, bit_nr: usize);
@@ -39,16 +38,12 @@ impl BitSet for [u64] {
         *self.get_unchecked_mut((nimber/64) as usize) = 1u64 << (nimber % 64) as u64;
     }
     
-    #[inline] fn set_nimber(&mut self, nimber: u16) {
+    #[inline] fn add_nimber(&mut self, nimber: u16) {
         self[(nimber/64) as usize] |= 1u64 << (nimber % 64) as u64;
     }
     
-    #[inline] fn get_nimber(&self, nimber: u16) -> bool {
+    #[inline] fn contain_nimber(&self, nimber: u16) -> bool {
         self[(nimber/64) as usize] & (1u64 << (nimber % 64)) != 0
-    }
-
-    #[inline(always)] fn try_get_nimber(&self, nimber: u16) -> Option<bool> {
-        Some(self.get((nimber/64) as usize)? & (1u64 << (nimber % 64) as u64) != 0)
     }
 
     unsafe fn set_bit_unchecked(&mut self, bit_nr: usize) {
@@ -89,7 +84,7 @@ pub(crate) mod tests {
     #[test]
     fn test_nimber_set() {
         let mut s: Vec<u64> = Vec::with_max_nimber(64);     // insert_nimber needs mut
-        for i in 0..=64 { s.set_nimber(i); }
+        for i in 0..=64 { s.add_nimber(i); }
         assert_eq!(s.mex(), 65);
     }
 }
