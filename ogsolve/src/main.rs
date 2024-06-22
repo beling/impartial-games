@@ -1,7 +1,10 @@
-use ogs::{Game, NaiveSolver};
+use ogs::{Game, NaiveSolver, SolverIterations};
 
 fn main() {
-    for n in NaiveSolver::with_capacity(Game::from_ascii(b"4.007").unwrap(), 100).take(100) {
+    let mut solver = NaiveSolver::with_capacity_stats(Game::from_ascii(b"4.007").unwrap(), 100, SolverIterations::default());
+    for n in solver.by_ref().take(100) {
         print !("{} ", n)
     }
+    println!();
+    println!("Iterations: {}", solver.stats)
 }
