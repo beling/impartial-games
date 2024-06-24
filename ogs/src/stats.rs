@@ -42,12 +42,20 @@ impl NimberStats {
         if nimber > self.max { self.max = nimber; }
     }
 
-    /// Returns sorted vector of nimbers, from the most to the less commmon
-    pub fn nimbers_from_most_common(&self) -> Vec<u16> {
+    /// Returns sorted vector of nimbers, from the most to the less commmon, skip chosen nimber
+    pub fn nimbers_from_most_common(&self, to_skip: u16) -> Vec<u16> {
         let mut result = Vec::with_capacity(self.max as usize);
-        for nimber in 1..=self.max {
-            if self.occurences[nimber as usize] != 0 {
-                result.push(nimber);
+        if to_skip == 0 {
+            for nimber in 1..=self.max {
+                if self.occurences[nimber as usize] != 0 {
+                    result.push(nimber);
+                }
+            }
+        } else {
+            for nimber in 0..=self.max {
+                if nimber != to_skip && self.occurences[nimber as usize] != 0 {
+                    result.push(nimber);
+                }
             }
         }
         // we use stable sort to lower nimber be the first in the case of tie

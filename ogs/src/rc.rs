@@ -28,6 +28,10 @@ impl RCSplit {
         true
     }
 
+    #[inline] pub fn can_add_to_c_d(&self, nimber: u16, d: u16) -> bool {
+        self.can_add_to_c(nimber ^ d)
+    }
+
     #[inline] pub fn add_to_c(&mut self, nimber: u16) {
         self.c.add_nimber(nimber);
         if nimber > self.max_c { self.max_c = nimber }
@@ -64,7 +68,7 @@ impl RCSplit {
     pub fn in_r(&mut self, nimber: u16, d: u16) -> bool {
         if self.c.contain_nimber(nimber) { return false; }
         if self.r.contain_nimber(nimber) { return true; }
-        if self.can_add_to_c(nimber ^ d) {
+        if self.can_add_to_c_d(nimber, d) {
             false
         } else {
             self.r.add_nimber(nimber);
@@ -75,14 +79,14 @@ impl RCSplit {
     pub fn clear(&mut self) {
         self.c.fill(0);
         self.r.fill(0);
-        self.r[0] = 1;
         self.max_c = 0;
         self.r_positions.clear();
     }
 
     pub fn rebuild(&mut self, stats: &NimberStats, nimbers: &[u16]) {
         self.clear();
-        for nimber in stats.nimbers_from_most_common() {
+        self.r[0] = 1;
+        for nimber in stats.nimbers_from_most_common(0) {
             self.classify(nimber);
         }
         for position in 1..nimbers.len() {
@@ -94,7 +98,8 @@ impl RCSplit {
 
     pub fn rebuild_d(&mut self, stats: &NimberStats, nimbers: &[u16], d: u16) {
         self.clear();
-        for nimber in stats.nimbers_from_most_common() {
+        self.r[0] = d as u64+1; // adds (0,0) (i.e. 0th bit) if d=0 and (0,1) (i.e. 1st bit) if d=1 to R
+        for nimber in stats.nimbers_from_most_common(d) {   // skip (0,d)
             self.classify_d(nimber, d);
         }
         for position in 1..nimbers.len() {
@@ -104,7 +109,22 @@ impl RCSplit {
         }
     }
 
+    pub fn should_rebuild_d(&self, recent_nimber: u16, stats: &NimberStats, d: u16) -> bool {
+        let r_occ = stats.occurences[recent_nimber as usize];
+        for c in 0..=stats.max {
+            if c == d { continue; }
+            let c_occ = stats.occurences[c as usize];
+            if c_occ == 0 || !self.c.contain_nimber(c) { continue; }
+            let c_grater = c > recent_nimber;
+            if (c_grater && r_occ == c_occ) || (!c_grater && r_occ == c_occ+1) {
+                return true;
+            }
+        }
+        false
+    }
+
     pub fn should_rebuild(&self, recent_nimber: u16, stats: &NimberStats) -> bool {
+        //self.should_rebuild_d(recent_nimber, stats, 0)
         let r_occ = stats.occurences[recent_nimber as usize];
         for c in 1..=stats.max {
             let c_occ = stats.occurences[c as usize];

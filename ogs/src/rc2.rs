@@ -75,7 +75,7 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
                     if let Some((a, b)) = moves[d].next() {
                         let option_nimber = self.nimbers[a] ^ self.nimbers[b];
                         option_nimbers.add_nimber(option_nimber);
-                        if result>>1 == option_nimber {
+                        if (result>>1) == option_nimber {
                             result = (option_nimbers.mex() << 1) | nd;
                             to_check = [self.split[0].in_r(result, 0), self.split[1].in_r(result, 1)];
                         }
@@ -89,10 +89,11 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
         for d in [0, 1] {
             if self.split[d].r.contain_nimber(result) {
                 if n != 0 { self.split[d].r_positions.push(n); }
-                if self.split[d].should_rebuild(result, &self.nimber_num) {
+                if self.split[d].should_rebuild_d(result, &self.nimber_num, d as u16) {
                     self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
                     self.stats.rebuilding_rc();
                 }
+                //self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
             } else {
                 self.split[d].add_to_c(result);
             }
