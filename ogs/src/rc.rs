@@ -142,7 +142,7 @@ impl RCSolver<()> {
     }
 
     pub fn with_capacity(game: Game, capacity: usize) -> Self {
-        Self::with_capacity(game, capacity)
+        Self::with_capacity_stats(game, capacity, ())
     }
 }
 

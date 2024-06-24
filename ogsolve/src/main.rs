@@ -20,8 +20,6 @@ fn main() {
     println!();
     println!("Iterations: {}", solver.stats);
     println!();
-    println!("Iterations: {}", solver.stats);
-    println!();
     println!("RC2:");
     let mut solver = RC2Solver::with_capacity_stats(game, iters, SolverIterations::default());
     for n in solver.by_ref().take(iters) {
