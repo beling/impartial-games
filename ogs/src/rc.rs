@@ -19,7 +19,7 @@ impl Default for RCSplit {
 }
 
 impl RCSplit {
-    pub fn can_add_to_c(&self, nimber: u16) -> bool {
+    #[inline] pub fn can_add_to_c(&self, nimber: u16) -> bool {
         for v in 1..=self.max_c {
             if self.c.contain_nimber(v) && self.c.contain_nimber(nimber ^ v) {
                 return false;
@@ -37,14 +37,21 @@ impl RCSplit {
         self.r.add_nimber(nimber);
     }
 
-    #[inline] pub fn classify(&mut self, nimber: u16) -> bool {
-        let result = self.can_add_to_c(nimber);
-        if result {
+    #[inline] pub fn add_to(&mut self, nimber: u16, to_c: bool) -> bool {
+        if to_c {
             self.add_to_c(nimber)
         } else {
             self.add_to_r(nimber)
         }
-        result
+        to_c
+    }
+
+    #[inline] pub fn classify(&mut self, nimber: u16) -> bool {
+        self.add_to(nimber, self.can_add_to_c(nimber))
+    }
+
+    #[inline] pub fn classify_d(&mut self, nimber: u16, d: u16) -> bool {
+        self.add_to(nimber, self.can_add_to_c(nimber ^ d))
     }
 
     pub fn in_c(&mut self, nimber: u16) -> bool {
@@ -54,10 +61,10 @@ impl RCSplit {
     }
 
     /// Never adds nimber to c.
-    pub fn in_r(&mut self, nimber: u16) -> bool {
+    pub fn in_r(&mut self, nimber: u16, d: u16) -> bool {
         if self.c.contain_nimber(nimber) { return false; }
         if self.r.contain_nimber(nimber) { return true; }
-        if self.can_add_to_c(nimber) {
+        if self.can_add_to_c(nimber ^ d) {
             false
         } else {
             self.r.add_nimber(nimber);
@@ -75,9 +82,23 @@ impl RCSplit {
 
     pub fn rebuild(&mut self, stats: &NimberStats, nimbers: &[u16]) {
         self.clear();
-        for nimber in stats.nimbers_from_most_common() { self.classify(nimber); }
+        for nimber in stats.nimbers_from_most_common() {
+            self.classify(nimber);
+        }
         for position in 1..nimbers.len() {
             if self.r.contain_nimber(nimbers[position]) {
+                self.r_positions.push(position);
+            }
+        }
+    }
+
+    pub fn rebuild_d(&mut self, stats: &NimberStats, nimbers: &[u16], d: u16) {
+        self.clear();
+        for nimber in stats.nimbers_from_most_common() {
+            self.classify_d(nimber, d);
+        }
+        for position in 1..nimbers.len() {
+            if self.r.contain_nimber((nimbers[position]<<1) | (position as u16 & 1)) {
                 self.r_positions.push(position);
             }
         }
@@ -100,18 +121,18 @@ impl RCSplit {
 pub struct RCSolver<S> {
     game: Game,
     nimbers: Vec<u16>,
-    nimber: NimberStats,
+    nimber_num: NimberStats,
     split: RCSplit,
     pub stats: S
 }
 
 impl<S> RCSolver<S> {
     pub fn with_stats(game: Game, stats: S) -> Self {
-        Self { game, nimbers: Vec::new(), nimber: Default::default(), stats, split: Default::default() }
+        Self { game, nimbers: Vec::new(), nimber_num: Default::default(), stats, split: Default::default() }
     }
 
     pub fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
-        Self { game, nimbers: Vec::with_capacity(capacity), nimber: Default::default(), stats, split: Default::default() }
+        Self { game, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: Default::default() }
     }
 }
 
@@ -161,12 +182,12 @@ impl<S: SolverEvent> Iterator for RCSolver<S> {
                 }
             }
         }
-        self.nimber.count(result);
+        self.nimber_num.count(result);
         self.nimbers.push(result);
         if self.split.r.contain_nimber(result) {
             if n != 0 { self.split.r_positions.push(n); }
-            if self.split.should_rebuild(result, &self.nimber) {
-                self.split.rebuild(&self.nimber, &self.nimbers);
+            if self.split.should_rebuild(result, &self.nimber_num) {
+                self.split.rebuild(&self.nimber_num, &self.nimbers);
                 self.stats.rebuilding_rc();
             }
         }

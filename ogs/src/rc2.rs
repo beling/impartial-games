@@ -7,7 +7,7 @@ pub struct RC2Solver<S> {
     game: Game,
     breaking: [Vec<u8>; 2], // breaking moves splitted to even and odd
     nimbers: Vec<u16>,
-    nimber: NimberStats,
+    nimber_num: NimberStats,
     split: [RCSplit; 2],
     pub stats: S
 }
@@ -24,12 +24,12 @@ impl<S> RC2Solver<S> {
 
     pub fn with_stats(game: Game, stats: S) -> Self {
         let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::new(), nimber: Default::default(), stats, split: Default::default() }
+        Self { game, breaking, nimbers: Vec::new(), nimber_num: Default::default(), stats, split: Default::default() }
     }
 
     pub fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
         let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber: Default::default(), stats, split: Default::default() }
+        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: Default::default() }
     }
 }
 
@@ -64,35 +64,40 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
         }
         let nd = n as u16 & 1;
         let mut result = (option_nimbers.mex() << 1) | nd;
-        let mut must_move = [self.split[0].in_r(result), self.split[1].in_r(result)];
+        let mut to_check = [self.split[0].in_r(result, 0), self.split[1].in_r(result, 1)];
         let mut moves = [
             BreakingMoveIterator::for_slice(n, &self.breaking[0]).fuse(),
             BreakingMoveIterator::for_slice(n, &self.breaking[1]).fuse()
         ];
-        while must_move[0] || must_move[1] {
+        while to_check[0] || to_check[1] {
             for d in [0, 1] {
-                while must_move[d] {
+                while to_check[d] {
                     if let Some((a, b)) = moves[d].next() {
                         let option_nimber = self.nimbers[a] ^ self.nimbers[b];
                         option_nimbers.add_nimber(option_nimber);
                         if result>>1 == option_nimber {
                             result = (option_nimbers.mex() << 1) | nd;
-                            must_move = [self.split[0].in_r(result), self.split[1].in_r(result)];
+                            to_check = [self.split[0].in_r(result, 0), self.split[1].in_r(result, 1)];
                         }
                         self.stats.break_option();
-                    } else { must_move[d] = false; }
+                    } else { to_check[d] = false; }
                 }
             }
         }
-        self.nimber.count(result);
+        self.nimber_num.count(result);
         self.nimbers.push(result>>1);
-        if self.split.r.contain_nimber(result) {
-            if n != 0 { self.split.r_positions.push(n); }
-            if self.split.should_rebuild(result, &self.nimber) {
-                self.split.rebuild(&self.nimber, &self.nimbers);
-                self.stats.rebuilding_rc();
+        for d in [0, 1] {
+            if self.split[d].r.contain_nimber(result) {
+                if n != 0 { self.split[d].r_positions.push(n); }
+                if self.split[d].should_rebuild(result, &self.nimber_num) {
+                    self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
+                    self.stats.rebuilding_rc();
+                }
+            } else {
+                self.split[d].add_to_c(result);
             }
         }
+
         //self.split.rebuild(&self.nimber, &self.nimbers);
         Some(result>>1)
     }
