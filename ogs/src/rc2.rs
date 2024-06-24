@@ -24,12 +24,12 @@ impl<S> RC2Solver<S> {
 
     pub fn with_stats(game: Game, stats: S) -> Self {
         let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::new(), nimber_num: Default::default(), stats, split: Default::default() }
+        Self { game, breaking, nimbers: Vec::new(), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
     }
 
     pub fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
         let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: Default::default() }
+        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
     }
 }
 
@@ -89,16 +89,18 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
         for d in [0, 1] {
             if self.split[d].r.contain_nimber(result) {
                 if n != 0 { self.split[d].r_positions.push(n); }
-                if self.split[d].should_rebuild_d(result, &self.nimber_num, d as u16) {
+                if self.split[d].should_rebuild_d(result, &self.nimber_num) {
                     self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
                     self.stats.rebuilding_rc();
                 }
-                //self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
+                self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
             } else {
                 self.split[d].add_to_c(result);
             }
         }
-
+        /*self.nimber_num.print_as_pairs(); println!();
+        self.split[0].print_as_pairs(); println!();
+        self.split[1].print_as_pairs();*/
         //self.split.rebuild(&self.nimber, &self.nimbers);
         Some(result>>1)
     }

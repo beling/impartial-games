@@ -11,14 +11,16 @@ pub(crate) struct RCSplit {
 }
 
 impl Default for RCSplit {
-    fn default() -> Self {
-        let mut r = [0; 1<<(16-6)];
-        r[0] = 1;   // adds 0 to r
-        Self { r, c: [0; 1<<(16-6)], max_c: 0, r_positions: Default::default() }
-    }
+    #[inline] fn default() -> Self { Self::new(0) }
 }
 
 impl RCSplit {
+    pub fn new(d: u16) -> Self {
+        let mut r = [0; 1<<(16-6)];
+        r[0] = d as u64+1;   // adds d to r
+        Self { r, c: [0; 1<<(16-6)], max_c: 0, r_positions: Default::default() }
+    }
+
     #[inline] pub fn can_add_to_c(&self, nimber: u16) -> bool {
         for v in 1..=self.max_c {
             if self.c.contain_nimber(v) && self.c.contain_nimber(nimber ^ v) {
@@ -109,10 +111,9 @@ impl RCSplit {
         }
     }
 
-    pub fn should_rebuild_d(&self, recent_nimber: u16, stats: &NimberStats, d: u16) -> bool {
+    pub fn should_rebuild_d(&self, recent_nimber: u16, stats: &NimberStats) -> bool {
         let r_occ = stats.occurences[recent_nimber as usize];
         for c in 0..=stats.max {
-            if c == d { continue; }
             let c_occ = stats.occurences[c as usize];
             if c_occ == 0 || !self.c.contain_nimber(c) { continue; }
             let c_grater = c > recent_nimber;
@@ -124,7 +125,7 @@ impl RCSplit {
     }
 
     pub fn should_rebuild(&self, recent_nimber: u16, stats: &NimberStats) -> bool {
-        //self.should_rebuild_d(recent_nimber, stats, 0)
+        //self.should_rebuild_d(recent_nimber, stats) //OK as 0 is in r
         let r_occ = stats.occurences[recent_nimber as usize];
         for c in 1..=stats.max {
             let c_occ = stats.occurences[c as usize];
@@ -136,6 +137,21 @@ impl RCSplit {
         }
         false
     }
+
+    /*pub fn print_as_pairs(&self) {
+        print!("C:");
+        for n in 0..=self.max_c {
+            if self.c.contain_nimber(n) { print!(" ({} {})", n>>1, n&1); }
+        }
+        print!(" R:");
+        for n in 0..=u16::MAX {
+            if self.r.contain_nimber(n) { print!(" ({} {})", n>>1, n&1); }
+        }
+        print!(" pos:");
+        for p in &self.r_positions {
+            print!(" {}", p);
+        }
+    }*/
 }
 
 pub struct RCSolver<S> {
