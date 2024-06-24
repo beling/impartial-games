@@ -3,11 +3,11 @@ use crate::Game;
 use crate::BitSet;
 use crate::SolverEvent;
 
-pub struct RCSplit {
-    r: [u64; 1<<(16-6)],
-    c: [u64; 1<<(16-6)],
-    max_c: u16, // largest nimber in c
-    r_positions: Vec<usize>,
+pub(crate) struct RCSplit {
+    pub(crate) r: [u64; 1<<(16-6)],
+    pub(crate) c: [u64; 1<<(16-6)],
+    pub(crate) max_c: u16, // largest nimber in c
+    pub(crate) r_positions: Vec<usize>,
 }
 
 impl Default for RCSplit {
@@ -51,6 +51,18 @@ impl RCSplit {
         if self.c.contain_nimber(nimber) { return true; }
         if self.r.contain_nimber(nimber) { return false; }
         self.classify(nimber)
+    }
+
+    /// Never adds nimber to c.
+    pub fn in_r(&mut self, nimber: u16) -> bool {
+        if self.c.contain_nimber(nimber) { return false; }
+        if self.r.contain_nimber(nimber) { return true; }
+        if self.can_add_to_c(nimber) {
+            false
+        } else {
+            self.r.add_nimber(nimber);
+            true
+        }
     }
 
     pub fn clear(&mut self) {
@@ -105,11 +117,11 @@ impl<S> RCSolver<S> {
 
 impl RCSolver<()> {
     pub fn new(game: Game) -> Self {
-        Self { game, nimbers: Vec::new(), nimber: Default::default(), stats: (), split: Default::default() }
+        Self::with_stats(game, ())
     }
 
     pub fn with_capacity(game: Game, capacity: usize) -> Self {
-        Self { game, nimbers: Vec::with_capacity(capacity), nimber: Default::default(), stats: (), split: Default::default() }
+        Self::with_capacity(game, capacity)
     }
 }
 
@@ -122,7 +134,7 @@ impl<S: SolverEvent> Iterator for RCSolver<S> {
         self.game.consider_taking(&self.nimbers, &mut option_nimbers, &mut self.stats);
         for b in &self.game.breaking {
             let b = *b as usize;
-            if b >= n { break }
+            if b+1 >= n { break }
             let after_take = n - b;
             for i in &self.split.r_positions {
                 if *i >= after_take { break; }
@@ -134,7 +146,7 @@ impl<S: SolverEvent> Iterator for RCSolver<S> {
         if !self.split.in_c(result) {
             'outer: for b in &self.game.breaking {
                 let b = *b as usize;
-                if b >= n { break }
+                if b+1 >= n { break }
                 let after_take = n - b;
                 for i in 1 .. after_take/2 + 1 {
                     let option_nimber = self.nimbers[i] ^ self.nimbers[after_take-i];

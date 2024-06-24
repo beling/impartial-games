@@ -1,6 +1,6 @@
 use crate::{BitSet, SolverEvent};
 
-use std::str::FromStr;
+use std::{iter::FusedIterator, str::FromStr};
 
 #[derive(Default, Clone)]
 pub struct Game {
@@ -76,13 +76,13 @@ pub struct BreakingMoveIterator<I> {
 }
 
 impl<I> BreakingMoveIterator<I> {
-    pub fn for_iter(n: usize, to_take_iterator: I) -> Self {
+    #[inline] pub fn for_iter(n: usize, to_take_iterator: I) -> Self {
         Self { current: to_take_iterator, n, after_take: 0, last_i: 0, i: 0 }
     }
 }
 
 impl<'a, IU: Into<usize> + Copy> BreakingMoveIterator<std::iter::Copied<std::slice::Iter<'a, IU>>> {
-    pub fn for_slice(n: usize, slice: &'a [IU]) -> Self {
+    #[inline] pub fn for_slice(n: usize, slice: &'a [IU]) -> Self {
         Self::for_iter(n, slice.iter().copied())
     }
 }
@@ -103,6 +103,8 @@ impl<IU: Into<usize>, I: Iterator<Item = IU>> Iterator for BreakingMoveIterator<
         Some((self.i, self.after_take - self.i))
     }
 }
+
+impl<IU: Into<usize>, I: Iterator<Item = IU> + FusedIterator> FusedIterator for BreakingMoveIterator<I>{}
 
 
 #[cfg(test)]

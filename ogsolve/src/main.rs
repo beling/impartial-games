@@ -3,7 +3,7 @@ use ogs::{Game, NaiveSolver, RCSolver, SolverIterations};
 fn main() {
     //let game = Game::from_ascii(b"4.007").unwrap();
     let game = Game::from_ascii(b"0.161").unwrap();
-    let iters = 10000;
+    let iters = 100;
     println!("naive:");
     let mut solver = NaiveSolver::with_capacity_stats(game.clone(), iters, SolverIterations::default());
     for n in solver.by_ref().take(iters) {

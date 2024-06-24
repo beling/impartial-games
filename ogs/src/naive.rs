@@ -20,11 +20,11 @@ impl<S> NaiveSolver<S> {
 
 impl NaiveSolver<()> {
     pub fn new(game: Game) -> Self {
-        Self { game, nimbers: Vec::new(), stats: () }
+        Self::with_stats(game, ())
     }
 
     pub fn with_capacity(game: Game, capacity: usize) -> Self {
-        Self { game, nimbers: Vec::with_capacity(capacity), stats: () }
+        Self::with_capacity(game, capacity)
     }
 }
 
