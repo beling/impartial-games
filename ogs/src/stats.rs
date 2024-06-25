@@ -28,7 +28,7 @@ impl Display for SolverIterations {
 }
 
 pub struct NimberStats {
-    pub occurences: [usize; 1<<16],
+    pub occurences: [u32; 1<<16],
     pub max: u16
 }
 
