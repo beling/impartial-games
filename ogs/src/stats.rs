@@ -3,7 +3,7 @@ use std::fmt::Display;
 pub trait SolverEvent {
     #[inline] fn take_option(&mut self) {}
     #[inline] fn break_option(&mut self) {}
-    #[inline] fn rebuilding_rc(&mut self) {}
+    #[inline] fn rebuilding_rc(&mut self, _nimbers_len: usize) {}
 }
 
 impl SolverEvent for () {}
@@ -12,13 +12,17 @@ impl SolverEvent for () {}
 pub struct SolverIterations {
     pub taking: usize,
     pub breaking: usize,
-    pub rebuilding_rc: usize
+    pub rebuilding_rc: usize,
+    pub rebuilding_rc_nimbers_len: usize
 }
 
 impl SolverEvent for SolverIterations {
     #[inline] fn take_option(&mut self) { self.taking += 1; }
     #[inline] fn break_option(&mut self) { self.breaking += 1; }
-    #[inline] fn rebuilding_rc(&mut self) { self.rebuilding_rc += 1; }
+    #[inline] fn rebuilding_rc(&mut self, nimbers_len: usize) {
+         self.rebuilding_rc += 1;
+         self.rebuilding_rc_nimbers_len += nimbers_len
+    }
 }
 
 impl Display for SolverIterations {
@@ -26,7 +30,7 @@ impl Display for SolverIterations {
         if self.taking != 0 { write!(f, "taking: {}, ", self.taking)?; }
         if self.breaking != 0 { write!(f, "breaking: {}, ", self.breaking)?; }
         write!(f, "total: {}", self.taking+self.breaking)?;
-        if self.rebuilding_rc != 0 { write!(f, ", R/C rebuilds: {}", self.rebuilding_rc)?; }
+        if self.rebuilding_rc != 0 { write!(f, ", R/C rebuilds: {} x{:.1}", self.rebuilding_rc, self.rebuilding_rc_nimbers_len as f64 / self.rebuilding_rc as f64)?; }
         Ok(())
     }
 }

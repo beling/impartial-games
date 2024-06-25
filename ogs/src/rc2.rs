@@ -89,7 +89,7 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
                 if n != 0 { self.split[d].r_positions.push(n); }
                 if self.split[d].should_rebuild_d(result, &self.nimber_num) {
                     self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
-                    self.stats.rebuilding_rc();
+                    self.stats.rebuilding_rc(self.nimbers.len());
                 }
                 self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
             } else {

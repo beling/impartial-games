@@ -42,6 +42,16 @@ struct Conf {
     pub print_nimbers: bool,
 }
 
+/// Calculates checksum with fletcher 32 algorithm.
+fn checksum(nimbers: &[u16]) -> u32 {
+    let mut checksum = (0u16, 0u16);
+    for n in nimbers {
+        checksum.0 += checksum.0.wrapping_add(*n);
+        checksum.1 += checksum.1.wrapping_add(checksum.0);
+    }
+    ((checksum.1 as u32) << 16) | checksum.0 as u32
+}
+
 impl Conf {
     fn run<S: Solver>(self) where S::Stats: Default+Display {
         let mut solver = S::with_capacity(self.game, self.nimber+1);
@@ -50,6 +60,7 @@ impl Conf {
             if self.print_nimbers { print!(" {}", n) }
         }
         if self.print_nimbers { println!() }
+        println!("Nimber of {}: {}, checksum: {}", self.nimber, solver.nimbers().last().unwrap(), checksum(solver.nimbers()));
         println!("{} iterations: {}", self.method, solver.stats())
     }    
 }

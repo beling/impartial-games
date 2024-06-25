@@ -5,6 +5,7 @@ use clap::Args;
 use crate::{solver::{PruningMethod, Without, print_nimber_of_simple}, tt::{TTConf, TTKind}, constdb::ConstDBConf};
 use igs::{games::chomp::{self, FewerBarsFirst}, transposition_table::{NimbersProvider, ProtectedTT, NimbersStorer, TTSuccinct64, bit_mixer::stafford13, cluster_policy::Fifo}, game::Game, solver::Solver};
 
+/// Returns min( (n k), u64::MAX )
 fn saturating_combinations(n: u64, mut k: u64) -> u64 {
     if k > n { return 0; }
     k = k.min(n-k);

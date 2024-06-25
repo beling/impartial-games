@@ -222,7 +222,7 @@ impl<S: SolverEvent> Iterator for RCSolver<S> {
             if n != 0 { self.split.r_positions.push(n); }
             if self.split.should_rebuild(result, &self.nimber_num) {
                 self.split.rebuild(&self.nimber_num, &self.nimbers);
-                self.stats.rebuilding_rc();
+                self.stats.rebuilding_rc(self.nimbers.len());
             }
         }
         //self.split.rebuild(&self.nimber, &self.nimbers);
