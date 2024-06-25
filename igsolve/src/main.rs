@@ -46,7 +46,7 @@ pub struct Conf {
 
     /// Pruning method. The default value depends on the game being solved
     #[arg(short='m', long, value_enum)]
-    pub method: Option<PruningMethod>
+    pub method: Option<PruningMethod>,
 }
 
 fn main() {

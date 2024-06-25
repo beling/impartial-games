@@ -1,6 +1,7 @@
 use crate::stats::NimberStats;
 use crate::Game;
 use crate::BitSet;
+use crate::Solver;
 use crate::SolverEvent;
 
 pub(crate) struct RCSplit {
@@ -154,7 +155,7 @@ impl RCSplit {
     }*/
 }
 
-pub struct RCSolver<S> {
+pub struct RCSolver<S = ()> {
     game: Game,
     nimbers: Vec<u16>,
     nimber_num: NimberStats,
@@ -162,23 +163,20 @@ pub struct RCSolver<S> {
     pub stats: S
 }
 
-impl<S> RCSolver<S> {
-    pub fn with_stats(game: Game, stats: S) -> Self {
+impl<S: SolverEvent> Solver for RCSolver<S> {   
+    type Stats = S;
+    
+    #[inline] fn stats(&self) -> &Self::Stats { &self.stats }
+    #[inline] fn nimbers(&self) -> &[u16] { &self.nimbers }
+    #[inline] fn game(&self) -> &Game { &self.game }
+    #[inline] fn capacity(&self) -> usize { self.nimbers.capacity() }
+
+    #[inline] fn with_stats(game: Game, stats: S) -> Self {
         Self { game, nimbers: Vec::new(), nimber_num: Default::default(), stats, split: Default::default() }
     }
 
-    pub fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
+    #[inline] fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
         Self { game, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: Default::default() }
-    }
-}
-
-impl RCSolver<()> {
-    pub fn new(game: Game) -> Self {
-        Self::with_stats(game, ())
-    }
-
-    pub fn with_capacity(game: Game, capacity: usize) -> Self {
-        Self::with_capacity_stats(game, capacity, ())
     }
 }
 

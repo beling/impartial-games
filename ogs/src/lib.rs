@@ -1,5 +1,6 @@
 mod set;
 mod game;
+mod solver;
 mod stats;
 
 // solvers:
@@ -11,6 +12,7 @@ pub use set::BitSet;
 pub use game::{Game, BreakingMoveIterator};
 pub use stats::{SolverEvent, SolverIterations};
 
+pub use solver::Solver;
 pub use naive::NaiveSolver;
 pub use rc::RCSolver;
 pub use rc2::RC2Solver;

@@ -1,9 +1,9 @@
-use crate::SolverEvent;
+use crate::{Solver, SolverEvent};
 use crate::{rc::RCSplit, Game, BreakingMoveIterator};
 use crate::stats::NimberStats;
 use crate::BitSet;
 
-pub struct RC2Solver<S> {
+pub struct RC2Solver<S = ()> {
     game: Game,
     breaking: [Vec<u8>; 2], // breaking moves splitted to even and odd
     nimbers: Vec<u16>,
@@ -12,6 +12,24 @@ pub struct RC2Solver<S> {
     pub stats: S
 }
 
+impl<S: SolverEvent> Solver for RC2Solver<S> {   
+    type Stats = S;
+    
+    #[inline] fn stats(&self) -> &Self::Stats { &self.stats }
+    #[inline] fn nimbers(&self) -> &[u16] { &self.nimbers }
+    #[inline] fn game(&self) -> &Game { &self.game }
+    #[inline] fn capacity(&self) -> usize { self.nimbers.capacity() }
+
+    #[inline] fn with_stats(game: Game, stats: S) -> Self {
+        let breaking = Self::split_breaking_moves(&game);
+        Self { game, breaking, nimbers: Vec::new(), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
+    }
+
+    #[inline] fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
+        let breaking = Self::split_breaking_moves(&game);
+        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
+    }
+}
 
 impl<S> RC2Solver<S> {
     fn split_breaking_moves(game: &Game) -> [Vec<u8>; 2] {
@@ -20,26 +38,6 @@ impl<S> RC2Solver<S> {
             result[i & 1].push(*m);
         }
         result
-    }
-
-    pub fn with_stats(game: Game, stats: S) -> Self {
-        let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::new(), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
-    }
-
-    pub fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
-        let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
-    }
-}
-
-impl RC2Solver<()> {
-    pub fn new(game: Game) -> Self {
-        Self::with_stats(game, ())
-    }
-
-    pub fn with_capacity(game: Game, capacity: usize) -> Self {
-        Self::with_capacity_stats(game, capacity, ())
     }
 }
 

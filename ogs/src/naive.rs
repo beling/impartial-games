@@ -1,30 +1,28 @@
+use crate::Solver;
 use crate::Game;
 use crate::BitSet;
 use crate::SolverEvent;
 
-pub struct NaiveSolver<S> {
+pub struct NaiveSolver<S = ()> {
     game: Game,
     nimbers: Vec<u16>,
     pub stats: S
 }
 
-impl<S> NaiveSolver<S> {
-    pub fn with_stats(game: Game, stats: S) -> Self {
+impl<S: SolverEvent> Solver for NaiveSolver<S> {   
+    type Stats = S;
+    
+    #[inline] fn stats(&self) -> &Self::Stats { &self.stats }
+    #[inline] fn nimbers(&self) -> &[u16] { &self.nimbers }
+    #[inline] fn game(&self) -> &Game { &self.game }
+    #[inline] fn capacity(&self) -> usize { self.nimbers.capacity() }
+
+    #[inline] fn with_stats(game: Game, stats: S) -> Self {
         Self { game, nimbers: Vec::new(), stats }
     }
 
-    pub fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
+    #[inline] fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
         Self { game, nimbers: Vec::with_capacity(capacity), stats }
-    }
-}
-
-impl NaiveSolver<()> {
-    pub fn new(game: Game) -> Self {
-        Self::with_stats(game, ())
-    }
-
-    pub fn with_capacity(game: Game, capacity: usize) -> Self {
-        Self::with_capacity_stats(game, capacity, ())
     }
 }
 
