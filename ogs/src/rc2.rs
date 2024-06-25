@@ -34,8 +34,8 @@ impl<S: SolverEvent> Solver for RC2Solver<S> {
 impl<S> RC2Solver<S> {
     fn split_breaking_moves(game: &Game) -> [Vec<u8>; 2] {
         let mut result = [Vec::<u8>::new(), Vec::<u8>::new()];
-        for (i, m) in game.breaking.iter().enumerate() {
-            result[i & 1].push(*m);
+        for m in game.breaking.iter().copied() {
+            result[(m & 1) as usize].push(m);
         }
         result
     }
