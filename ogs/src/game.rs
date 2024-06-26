@@ -18,12 +18,12 @@ impl Game {
 
     pub fn from_ascii(mut s: &[u8]) -> Option<Game> {
         let mut result = Self::default();
-        if s.starts_with(b"4.") {
+        if s.starts_with(b"4.") || s.starts_with(b"4,") || s.starts_with(b"4d") {
             result.breaking.push(0);
             s = &s[2..];
-        } else if s.starts_with(b"0.") {
+        } else if s.starts_with(b"0.") || s.starts_with(b"0,") || s.starts_with(b"0d") {
             s = &s[2..];
-        } else if s.starts_with(b".") {
+        } else if s.starts_with(b".") || s.starts_with(b",") || s.starts_with(b"d") {
             s = &s[1..];
         }
         let mut position = 0u8;
@@ -70,8 +70,8 @@ impl Game {
         result
     }
 
-    /// Returns rules as an ascii string.
-    pub fn to_ascii(&self) -> Vec<u8> {
+    /// Returns rules as an ascii string, using given decimal separator (for example `b'.'`).
+    pub fn to_ascii(&self, separator: u8) -> Vec<u8> {
         let rules = self.rules();
         let mut number_of_rules = 0;
         for (i, r) in rules.iter().enumerate() {
@@ -80,7 +80,7 @@ impl Game {
         number_of_rules += 1;
         let mut result = Vec::with_capacity(number_of_rules);
         result[0] = rules[0] + b'0';
-        result[1] = b'.';
+        result[1] = separator;
         for r in 1..number_of_rules {
             result[r+1] = rules[r] + b'0';
         }
@@ -98,7 +98,7 @@ impl FromStr for Game {
 
 impl ToString for Game {
     fn to_string(&self) -> String {
-        unsafe{ String::from_utf8_unchecked(self.to_ascii()) }
+        unsafe{ String::from_utf8_unchecked(self.to_ascii(b'.')) }
     }
 }
 
