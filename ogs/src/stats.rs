@@ -70,16 +70,6 @@ impl NimberStats {
         result.sort_by(|a, b| self.occurences[*b as usize].cmp(&self.occurences[*a as usize]));
         result
     }
-
-    /*pub fn print_as_pairs(&self) {
-        for nimber in 0..=self.max {
-            let occ = self.occurences[nimber as usize];
-            if occ != 0 {
-                if nimber != 0 { print!(", ") }
-                print!("({},{})x{}", nimber>>1, nimber&1, occ)
-            }
-        }
-    }*/
 }
 
 impl Display for NimberStats {
