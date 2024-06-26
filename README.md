@@ -3,9 +3,11 @@ Currently, only the [normal play convention](https://en.wikipedia.org/wiki/Norma
 
 Included libraries:
 - `igs` ([crate](https://crates.io/crates/igs), [doc](https://docs.rs/igs)) - solves [impartial games](https://en.wikipedia.org/wiki/Impartial_game) under the [normal play convention](https://en.wikipedia.org/wiki/Normal_play_convention);
+- `ogs` ([crate](https://crates.io/crates/ogs), [doc](https://docs.rs/ogs)) - solves [octal games](https://en.wikipedia.org/wiki/Octal_game).
 
 Included programs:
-- `igsolve` ([crate](https://crates.io/crates/igsolve), [doc](https://docs.rs/igsolve)) - a console-based application for calculating nimbers with `igs`.
+- `igsolve` ([crate](https://crates.io/crates/igsolve), [doc](https://docs.rs/igsolve)) - a console-based application for calculating nimbers with `igs`;
+- `ogsolve` ([crate](https://crates.io/crates/ogsolve), [doc](https://docs.rs/ogsolve)) - a console-based application for calculating nimbers with `ogs`.
 
 # Installation
 Programs can be compiled and installed from sources. To do this, a Rust compiler is needed.

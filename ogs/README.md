@@ -1,0 +1,1 @@
+`ogs` (*octal game solver*) is the Rust library by Piotr Beling for solving [octal games](https://en.wikipedia.org/wiki/Octal_game).
