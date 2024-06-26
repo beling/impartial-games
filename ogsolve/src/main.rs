@@ -61,7 +61,8 @@ impl Conf {
         }
         if self.print_nimbers { println!() }
         println!("Nimber of {}: {}, checksum: {}", self.nimber, solver.nimbers().last().unwrap(), checksum(solver.nimbers()));
-        println!("{} iterations: {}", self.method, solver.stats())
+        println!("{} iterations: {}", self.method, solver.stats());
+        solver.print_nimber_stat().unwrap();
     }    
 }
 
