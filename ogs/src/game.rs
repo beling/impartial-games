@@ -1,6 +1,6 @@
 use crate::{BitSet, SolverEvent};
 
-use std::{iter::FusedIterator, str::FromStr};
+use std::{fmt::Display, iter::FusedIterator, str::FromStr};
 
 #[derive(Default, Clone)]
 pub struct Game {
@@ -56,6 +56,36 @@ impl Game {
         //BreakingMoveIterator::for_iter(n, self.breaking.iter().copied())
         BreakingMoveIterator::for_slice(n, self.breaking.as_slice())
     }
+
+    /// Returns rules as a sequence of octal numbers.
+    pub fn rules(&self) -> [u8; 256] {
+        let mut result = [0; 256];
+        for a in 0..256 {
+            if self.taking_all.get_bit(a) {
+                result[a] |= 1;
+            }
+        }
+        for t in &self.taking { result[*t as usize] |= 2; }
+        for b in &self.breaking { result[*b as usize] |= 4; }
+        result
+    }
+
+    /// Returns rules as an ascii string.
+    pub fn to_ascii(&self) -> Vec<u8> {
+        let rules = self.rules();
+        let mut number_of_rules = 0;
+        for (i, r) in rules.iter().enumerate() {
+            if *r != 0 { number_of_rules = i; }
+        }
+        number_of_rules += 1;
+        let mut result = Vec::with_capacity(number_of_rules);
+        result[0] = rules[0] + b'0';
+        result[1] = b'.';
+        for r in 1..number_of_rules {
+            result[r+1] = rules[r] + b'0';
+        }
+        result
+    }
 }
 
 impl FromStr for Game {
@@ -66,6 +96,17 @@ impl FromStr for Game {
     }
 }
 
+impl ToString for Game {
+    fn to_string(&self) -> String {
+        unsafe{ String::from_utf8_unchecked(self.to_ascii()) }
+    }
+}
+
+/*impl Display for Game {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}*/
 
 pub struct BreakingMoveIterator<I> {
     current: I,
