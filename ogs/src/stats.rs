@@ -30,7 +30,7 @@ impl Display for SolverIterations {
         if self.taking != 0 { write!(f, "taking: {}, ", self.taking)?; }
         if self.breaking != 0 { write!(f, "breaking: {}, ", self.breaking)?; }
         write!(f, "total: {}", self.taking+self.breaking)?;
-        if self.rebuilding_rc != 0 { write!(f, ", R/C rebuilds: {} x{:.1}", self.rebuilding_rc, self.rebuilding_rc_nimbers_len as f64 / self.rebuilding_rc as f64)?; }
+        if self.rebuilding_rc != 0 { write!(f, ", RC effort/rebuilds: {}/{}", self.rebuilding_rc_nimbers_len, self.rebuilding_rc)?; }
         Ok(())
     }
 }
@@ -80,4 +80,22 @@ impl NimberStats {
             }
         }
     }*/
+}
+
+impl Display for NimberStats {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let print_as_pairs = f.sign_plus();
+        for nimber in 0..=self.max {
+            let occ = self.occurences[nimber as usize];
+            if occ != 0 {
+                if nimber != 0 { write!(f, ", ")?; }
+                if print_as_pairs {  // pairs:
+                    write!(f, "({},{})x{}", nimber>>1, nimber&1, occ)?;
+                } else {
+                    write!(f, "{}x{}", nimber, occ)?;
+                }
+            }
+        }
+        Ok(())
+    }
 }
