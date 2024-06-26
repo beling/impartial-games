@@ -148,14 +148,14 @@ impl Display for RCSplit {
         write!(f, "C:")?;
         for n in 0..=self.max_c {
             if self.c.contain_nimber(n) {
-                if as_pairs { write!(f, " ({} {})", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
+                if as_pairs { write!(f, " ({},{})", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
             }
         }
         writeln!(f)?;
         write!(f, "R:")?;
         for n in 0..=u16::MAX {
             if self.r.contain_nimber(n) {
-                if as_pairs { write!(f, " ({} {})", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
+                if as_pairs { write!(f, " ({},{})", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
             }
         }
         write!(f, " at {} pos:", self.r_positions.len())?;
