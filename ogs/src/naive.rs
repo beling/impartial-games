@@ -1,3 +1,4 @@
+use crate::stats::NimberStats;
 use crate::Solver;
 use crate::Game;
 use crate::BitSet;
@@ -23,6 +24,12 @@ impl<S: SolverEvent> Solver for NaiveSolver<S> {
 
     #[inline] fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
         Self { game, nimbers: Vec::with_capacity(capacity), stats }
+    }
+    
+    fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
+        let mut stats = NimberStats::default();
+        for n in &self.nimbers { stats.count(*n) }
+        writeln!(f, "{}", &stats)
     }
 }
 

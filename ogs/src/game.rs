@@ -1,6 +1,6 @@
 use crate::{BitSet, SolverEvent};
 
-use std::{fmt::Display, iter::FusedIterator, str::FromStr};
+use std::{iter::FusedIterator, str::FromStr};
 
 #[derive(Default, Clone)]
 pub struct Game {

@@ -29,6 +29,12 @@ impl<S: SolverEvent> Solver for RC2Solver<S> {
         let breaking = Self::split_breaking_moves(&game);
         Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
     }
+
+    fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
+        writeln!(f, "{:+}", self.nimber_num)?;
+        writeln!(f, "0: {:+}", self.split[0])?;
+        writeln!(f, "1: {:+}", self.split[1])
+    }
 }
 
 impl<S> RC2Solver<S> {

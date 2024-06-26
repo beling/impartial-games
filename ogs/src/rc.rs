@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::stats::NimberStats;
 use crate::Game;
 use crate::BitSet;
@@ -138,21 +140,29 @@ impl RCSplit {
         }
         false
     }
+}
 
-    /*pub fn print_as_pairs(&self) {
+impl Display for RCSplit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let as_pairs = f.sign_plus();
         print!("C:");
         for n in 0..=self.max_c {
-            if self.c.contain_nimber(n) { print!(" ({} {})", n>>1, n&1); }
+            if self.c.contain_nimber(n) {
+                if as_pairs { write!(f, " ({} {})", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
+            }
         }
         print!(" R:");
         for n in 0..=u16::MAX {
-            if self.r.contain_nimber(n) { print!(" ({} {})", n>>1, n&1); }
+            if self.r.contain_nimber(n) {
+                if as_pairs { write!(f, " ({} {})", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
+            }
         }
         print!(" pos:");
         for p in &self.r_positions {
-            print!(" {}", p);
+            write!(f, " {}", p)?;
         }
-    }*/
+        Ok(())
+    }
 }
 
 pub struct RCSolver<S = ()> {
@@ -177,6 +187,11 @@ impl<S: SolverEvent> Solver for RCSolver<S> {
 
     #[inline] fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
         Self { game, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: Default::default() }
+    }
+    
+    fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
+        writeln!(f, "{}", self.nimber_num)?;
+        writeln!(f, "{}", self.split)
     }
 }
 

@@ -18,4 +18,10 @@ pub trait Solver: Iterator<Item=u16> {
     #[inline] fn with_capacity(game: Game, capacity: usize) -> Self where Self: Sized, Self::Stats: Default {
         Self::with_capacity_stats(game, capacity, Default::default())
     }
+
+    fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()>;
+
+    fn print_nimber_stat(&self) -> std::io::Result<()> {
+        self.print_nimber_stat_to(&mut std::io::stdout().lock())
+    }
 }
