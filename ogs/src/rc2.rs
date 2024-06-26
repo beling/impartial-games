@@ -32,8 +32,8 @@ impl<S: SolverEvent> Solver for RC2Solver<S> {
 
     fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
         writeln!(f, "{:+}", self.nimber_num)?;
-        writeln!(f, "0: {:+}", self.split[0])?;
-        writeln!(f, "1: {:+}", self.split[1])
+        writeln!(f, "{:.0}", self.split[0])?;
+        writeln!(f, "{:.1}", self.split[1])
     }
 }
 

@@ -144,18 +144,22 @@ impl RCSplit {
 
 impl Display for RCSplit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let as_pairs = f.sign_plus();
-        write!(f, "C:")?;
+        let (as_pairs, name) = if let Some(p) = f.precision() {
+            (true, p.to_string())
+        } else {
+            (false, "".to_owned())
+        };
+        write!(f, "C{}:", name)?;
         for n in 0..=self.max_c {
             if self.c.contain_nimber(n) {
-                if as_pairs { write!(f, " ({},{})", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
+                if as_pairs { write!(f, " {}.{}", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
             }
         }
         writeln!(f)?;
-        write!(f, "R:")?;
+        write!(f, "R{}:", name)?;
         for n in 0..=u16::MAX {
             if self.r.contain_nimber(n) {
-                if as_pairs { write!(f, " ({},{})", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
+                if as_pairs { write!(f, " {}.{}", n>>1, n&1)?; } else { write!(f, " {}", n)?; }
             }
         }
         write!(f, " at {} pos:", self.r_positions.len())?;

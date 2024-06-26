@@ -74,15 +74,20 @@ impl NimberStats {
 
 impl Display for NimberStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let print_as_pairs = f.sign_plus();
-        for nimber in 0..=self.max {
-            let occ = self.occurences[nimber as usize];
-            if occ != 0 {
-                if nimber != 0 { write!(f, ", ")?; }
-                if print_as_pairs {  // pairs:
-                    write!(f, "({},{})x{}", nimber>>1, nimber&1, occ)?;
-                } else {
-                    write!(f, "{}x{}", nimber, occ)?;
+        if f.sign_plus() {  // pairs:
+            for nimber in (0..=self.max).step_by(2) {
+                let occ = (self.occurences[nimber as usize], self.occurences[nimber as usize + 1]);
+                if occ.0 != 0 || occ.1 != 0 {
+                    if nimber != 0 { write!(f, ",\t")?; }
+                    write!(f, "{}: {}+{}", nimber>>1, occ.0, occ.1)?;
+                }
+            }
+        } else {
+            for nimber in 0..=self.max {
+                let occ = self.occurences[nimber as usize];
+                if occ != 0 {
+                    if nimber != 0 { write!(f, ",\t")?; }
+                    write!(f, "{}: {}", nimber, occ)?;
                 }
             }
         }
