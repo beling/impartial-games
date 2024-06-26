@@ -79,10 +79,10 @@ impl Game {
         }
         number_of_rules += 1;
         let mut result = Vec::with_capacity(number_of_rules);
-        result[0] = rules[0] + b'0';
-        result[1] = separator;
+        result.push(rules[0] + b'0');
+        result.push(separator);
         for r in 1..number_of_rules {
-            result[r+1] = rules[r] + b'0';
+            result.push(rules[r] + b'0');
         }
         result
     }

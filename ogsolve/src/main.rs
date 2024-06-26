@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, fs::File, io::Write};
 
 use clap::{Parser, ValueEnum};
 use ogs::{Game, NaiveSolver, RC2Solver, RCSolver, Solver, SolverIterations};
@@ -35,11 +35,15 @@ struct Conf {
 
     /// The (last) position which nimber should be found
     #[arg(short='n', default_value_t = 10_000)]
-    pub nimber: usize,
+    pub position: usize,
 
-    /// Whether to print nimbers
+    /// Print nimbers
     #[arg(short='p', long, default_value_t = false)]
     pub print_nimbers: bool,
+
+    /// Save benchmark results to ogsolve_benchmark.csv file
+    #[arg(short='b', long="benchmark", default_value_t = false)]
+    pub save_benchmark: bool,
 }
 
 /// Calculates checksum with fletcher 32 algorithm.
@@ -52,17 +56,36 @@ fn checksum(nimbers: &[u16]) -> u32 {
     ((checksum.1 as u32) << 16) | checksum.0 as u32
 }
 
+
+/// Either opens or crates (and than put headers inside) and returns the file with given `file_name` (+`csv` extension).
+fn csv_file(file_name: &str, header: &str) -> File {
+    let file_name = format!("{}.csv", file_name);
+    let file_already_existed = std::path::Path::new(&file_name).exists();
+    let mut file = std::fs::OpenOptions::new().append(true).create(true).open(&file_name).unwrap();
+    if !file_already_existed { writeln!(file, "{}", header).unwrap(); }
+    file
+}
+
 impl Conf {
-    fn run<S: Solver>(self) where S::Stats: Default+Display {
-        let mut solver = S::with_capacity(self.game, self.nimber+1);
+    fn run<S: Solver<Stats = SolverIterations>>(self) /*where S::Stats: Default+Display*/ {
+        let mut solver = S::with_capacity(self.game, self.position+1);
         if self.print_nimbers { print!("Nimbers: ") }
-        for n in solver.by_ref().take(self.nimber+1) {
+        for n in solver.by_ref().take(self.position+1) {
             if self.print_nimbers { print!(" {}", n) }
         }
         if self.print_nimbers { println!() }
-        println!("Nimber of {}: {}, checksum: {}", self.nimber, solver.nimbers().last().unwrap(), checksum(solver.nimbers()));
-        println!("{} iterations: {}", self.method, solver.stats());
+        let checksum = checksum(solver.nimbers());
+        println!("Nimber of {}: {}, checksum: {:X}", self.position, solver.nimbers().last().unwrap(), checksum);
+        let stats = solver.stats();
+        println!("{} iterations: {}", self.method, stats);
         solver.print_nimber_stat().unwrap();
+        if self.save_benchmark {
+            let mut file = csv_file("ogsolve_benchmark",
+                "game, positions, method, checksum, take_iter, break_iter, rc_effort, rc_rebuilds");
+            writeln!(file, "{}, {}, {}, {:X}, {}, {}, {}, {}",
+                solver.game().to_string(), self.position, self.method, checksum,
+                stats.taking, stats.breaking, stats.rebuilding_rc_nimbers_len, stats.rebuilding_rc).unwrap();
+        }
     }    
 }
 

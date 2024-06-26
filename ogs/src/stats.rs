@@ -78,16 +78,16 @@ impl Display for NimberStats {
             for nimber in (0..=self.max).step_by(2) {
                 let occ = (self.occurences[nimber as usize], self.occurences[nimber as usize + 1]);
                 if occ.0 != 0 || occ.1 != 0 {
-                    if nimber != 0 { write!(f, ",\t")?; }
-                    write!(f, "{}: {}+{}", nimber>>1, occ.0, occ.1)?;
+                    if nimber != 0 { write!(f, "\t")?; }
+                    write!(f, "{:>2}:{}+{}", nimber>>1, occ.0, occ.1)?;
                 }
             }
         } else {
             for nimber in 0..=self.max {
                 let occ = self.occurences[nimber as usize];
                 if occ != 0 {
-                    if nimber != 0 { write!(f, ",\t")?; }
-                    write!(f, "{}: {}", nimber, occ)?;
+                    if nimber != 0 { write!(f, "\t")?; }
+                    write!(f, "{:>2}:{}", nimber, occ)?;
                 }
             }
         }
