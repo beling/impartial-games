@@ -32,8 +32,9 @@ impl<S: SolverEvent> Solver for RC2Solver<S> {
 
     fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
         writeln!(f, "{:+}", self.nimber_num)?;
-        writeln!(f, "{:.0}", self.split[0])?;
-        writeln!(f, "{:.1}", self.split[1])
+        if !self.breaking[0].is_empty() { writeln!(f, "{:.0}", self.split[0])?; }
+        if !self.breaking[1].is_empty() { writeln!(f, "{:.1}", self.split[1])?; }
+        Ok(())
     }
 }
 
@@ -44,6 +45,14 @@ impl<S> RC2Solver<S> {
             result[(m & 1) as usize].push(m);
         }
         result
+    }   
+}
+
+#[inline(always)] fn in_r<const D: u16>(breaking: &[Vec<u8>; 2], split: &mut [RCSplit; 2], nim_pos: u16) -> bool {
+    if breaking[D as usize].is_empty() {
+        false   // R does not exist so nothing is inside, R_positions is empty
+    } else {
+        split[D as usize].in_r(nim_pos, D)
     }
 }
 
@@ -68,7 +77,10 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
         }
         let nd = n as u16 & 1;
         let mut result = (option_nimbers.mex() << 1) | nd;
-        let mut to_check = [self.split[0].in_r(result, 0), self.split[1].in_r(result, 1)];
+        let mut to_check = [
+            in_r::<0>(&self.breaking, &mut self.split, result),
+            in_r::<1>(&self.breaking, &mut self.split, result)
+        ];
         let mut moves = [
             BreakingMoveIterator::for_slice(n, &self.breaking[0]).fuse(),
             BreakingMoveIterator::for_slice(n, &self.breaking[1]).fuse()
@@ -81,7 +93,10 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
                         option_nimbers.add_nimber(option_nimber);
                         if (result>>1) == option_nimber {
                             result = (option_nimbers.mex() << 1) | nd;
-                            to_check = [self.split[0].in_r(result, 0), self.split[1].in_r(result, 1)];
+                            to_check = [
+                                in_r::<0>(&self.breaking, &mut self.split, result),
+                                in_r::<1>(&self.breaking, &mut self.split, result)
+                            ];
                         }
                         self.stats.break_option();
                     } else { to_check[d] = false; }
@@ -91,6 +106,7 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
         self.nimber_num.count(result);
         self.nimbers.push(result>>1);
         for d in [0, 1] {
+            if self.breaking[d].is_empty() { continue; }
             if self.split[d].r.contain_nimber(result) {
                 if n != 0 { self.split[d].r_positions.push(n); }
                 if self.split[d].should_rebuild_d(result, &self.nimber_num) {
