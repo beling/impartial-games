@@ -86,6 +86,29 @@ impl Game {
         }
         result
     }
+
+    /// Returns the total number of taking iterations needed (by any of the methods: naive, RC or RC2)
+    /// to calculate the nimbers of all positions up to and including the one given.
+    pub fn taking_iters(&self, position: usize) -> usize {
+        self.taking.iter().map(|t| position.saturating_sub(*t as usize)).sum()
+    }
+
+    /// Returns the total number of breaking iterations needed by the naive method
+    /// to calculate the nimbers of all positions up to and including the one specified.
+    pub fn breaking_naive_iters(&self, position: usize) -> usize {
+        self.breaking.iter().map(|b| {
+            let b = *b as usize;
+            if position < b + 2 { 0 } else
+            if position & 1 != b & 1 { let k = (position - b - 1) / 2; k*k+k } // difference is odd
+            else { let hd = (position - b) / 2; let k = hd-1; k*k+k + hd }  // difference is even
+        }).sum()
+    }
+
+    /// Returns the total number of iterations needed by the naive method
+    /// to calculate the nimbers of all positions up to and including the one specified.
+    pub fn naive_iters(&self, position: usize) -> usize {
+        self.taking_iters(position) + self.breaking_naive_iters(position)
+    }
 }
 
 impl FromStr for Game {

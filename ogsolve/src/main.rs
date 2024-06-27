@@ -10,13 +10,15 @@ pub enum Method {
     /// RC
     RC,
     /// RC2
-    RC2
+    RC2,
+    /// Predict the number of iterations of naive methods without calculating nimbers
+    PredictNaive
 }
 
 impl Display for Method {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Method::Naive => write!(f, "naive"),
+            Method::Naive|Method::PredictNaive => write!(f, "naive"),
             Method::RC => write!(f, "RC"),
             Method::RC2 => write!(f, "RC2"),
         }
@@ -66,8 +68,15 @@ fn csv_file(file_name: &str, header: &str) -> File {
     file
 }
 
+const BENCHMARK_FILENAME: &'static str = "ogsolve_benchmark";
+const BENCHMARK_HEADER: &'static str = "game, positions, method, checksum, take_iter, break_iter, rc_effort, rc_rebuilds";
+
 impl Conf {
-    fn run<S: Solver<Stats = SolverIterations>>(self) /*where S::Stats: Default+Display*/ {
+    fn predicted_naive_stats(&self) -> SolverIterations {
+        SolverIterations{ taking: self.game.taking_iters(self.position), breaking: self.game.breaking_naive_iters(self.position), ..Default::default() }
+    }
+
+    fn run<S: Solver<Stats = SolverIterations>>(self) /*where S::Stats: Default+Display*/ {        
         let mut solver = S::with_capacity(self.game, self.position+1);
         if self.print_nimbers { print!("Nimbers: ") }
         for n in solver.by_ref().take(self.position+1) {
@@ -80,9 +89,7 @@ impl Conf {
         println!("{} iterations: {}", self.method, stats);
         solver.print_nimber_stat().unwrap();
         if self.save_benchmark {
-            let mut file = csv_file("ogsolve_benchmark",
-                "game, positions, method, checksum, take_iter, break_iter, rc_effort, rc_rebuilds");
-            writeln!(file, "{}, {}, {}, {:X}, {}, {}, {}, {}",
+            writeln!(csv_file(BENCHMARK_FILENAME, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}",
                 solver.game().to_string(), self.position, self.method, checksum,
                 stats.taking, stats.breaking, stats.rebuilding_rc_nimbers_len, stats.rebuilding_rc).unwrap();
         }
@@ -91,9 +98,18 @@ impl Conf {
 
 fn main() {
     let conf: Conf = Conf::parse();
+    let naive_iters = conf.predicted_naive_stats();
+    println!("Predicted number of naive iterations: {}", naive_iters);
     match conf.method {
         Method::Naive => conf.run::<NaiveSolver<SolverIterations>>(),
         Method::RC => conf.run::<RCSolver<SolverIterations>>(),
         Method::RC2 => conf.run::<RC2Solver<SolverIterations>>(),
+        Method::PredictNaive => {
+            if conf.save_benchmark {
+                writeln!(csv_file(BENCHMARK_FILENAME, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}",
+                    conf.game.to_string(), conf.position, conf.method, "",
+                    naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_rc_nimbers_len, naive_iters.rebuilding_rc).unwrap();
+            }
+        },
     }
 }
