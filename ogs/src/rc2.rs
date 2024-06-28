@@ -118,9 +118,6 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
                 self.split[d].add_to_c(result);
             }
         }
-        /*self.nimber_num.print_as_pairs(); println!();
-        self.split[0].print_as_pairs(); println!();
-        self.split[1].print_as_pairs();*/
         //self.split.rebuild(&self.nimber, &self.nimbers);
         Some(result>>1)
     }
