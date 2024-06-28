@@ -1,6 +1,6 @@
 use std::{fmt::Display, fs::File, io::Write};
 
-use clap::{Parser, ValueEnum};
+use clap::{Parser, ValueEnum, ArgAction};
 use ogs::{Game, NaiveSolver, RC2Solver, RCSolver, Solver, SolverIterations};
 
 #[derive(ValueEnum, Clone, Copy, Debug)]
@@ -19,8 +19,8 @@ impl Display for Method {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             Method::Naive|Method::PredictNaive => write!(f, "naive"),
-            Method::RC => write!(f, "RC"),
-            Method::RC2 => write!(f, "RC2"),
+            Method::RC => write!(f, "rc"),
+            Method::RC2 => write!(f, "rc2"),
         }
     }
 }
@@ -31,9 +31,9 @@ struct Conf {
     /// Game to solve
     game: Game,
 
-    /// Method of calculating nimbers
-    #[arg(short='m', value_enum, default_value_t=Method::Naive)]
-    pub method: Method,
+    /// Method(s) of calculating nimbers
+    #[arg(short='m', default_value="naive", action=ArgAction::Append, value_delimiter=',')]
+    pub method: Vec<Method>,
 
     /// The (last) position which nimber should be found
     #[arg(short='n', default_value_t = 10_000)]
@@ -43,9 +43,13 @@ struct Conf {
     #[arg(short='p', long, default_value_t = false)]
     pub print_nimbers: bool,
 
-    /// Save the benchmark results to a file with the given name or to ogsolve_benchmark.csv
+    /// Print nimber and solver statistics
+    #[arg(short='s', long="stats", default_value_t = false)]
+    pub print_stats: bool,
+
+    /// Save the benchmark results to a file with the given name (ogsolve_benchmark.csv by default)
     #[arg(short='b', long="benchmark", num_args=0..=1, default_missing_value="ogsolve_benchmark.csv", value_name="FILE_NAME")]
-    pub save_benchmark: Option<String>,
+    pub benchmark_filename: Option<String>,
 }
 
 /// Calculates checksum with fletcher 32 algorithm.
@@ -76,21 +80,21 @@ impl Conf {
         SolverIterations{ taking: self.game.taking_iters(self.position), breaking: self.game.breaking_naive_iters(self.position), ..Default::default() }
     }
 
-    fn run<S: Solver<Stats = SolverIterations>>(self) /*where S::Stats: Default+Display*/ {        
-        let mut solver = S::with_capacity(self.game, self.position+1);
+    fn run<S: Solver<Stats = SolverIterations>>(&self, method: Method) /*where S::Stats: Default+Display*/ {        
+        let mut solver = S::with_capacity(self.game.clone(), self.position+1);
         if self.print_nimbers { print!("Nimbers: ") }
         for n in solver.by_ref().take(self.position+1) {
             if self.print_nimbers { print!(" {}", n) }
         }
         if self.print_nimbers { println!() }
         let checksum = checksum(solver.nimbers());
-        println!("Nimber of {}: {}, checksum: {:X}", self.position, solver.nimbers().last().unwrap(), checksum);
+        println!("{}: nimber of {}: {}, checksum: {:X}", method, self.position, solver.nimbers().last().unwrap(), checksum);
         let stats = solver.stats();
-        println!("{} iterations: {}", self.method, stats);
-        solver.print_nimber_stat().unwrap();
-        if let Some(filename) = self.save_benchmark {
+        println!(" iterations: {}", stats);
+        if self.print_stats { solver.print_nimber_stat().unwrap(); }
+        if let Some(ref filename) = self.benchmark_filename {
             writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}",
-                solver.game().to_string(), self.position, self.method, checksum,
+                solver.game().to_string(), self.position, method, checksum,
                 stats.taking, stats.breaking, stats.rebuilding_rc_nimbers_len, stats.rebuilding_rc).unwrap();
         }
     }    
@@ -99,17 +103,19 @@ impl Conf {
 fn main() {
     let conf: Conf = Conf::parse();
     let naive_iters = conf.predicted_naive_stats();
-    println!("Predicted number of naive iterations: {}", naive_iters);
-    match conf.method {
-        Method::Naive => conf.run::<NaiveSolver<SolverIterations>>(),
-        Method::RC => conf.run::<RCSolver<SolverIterations>>(),
-        Method::RC2 => conf.run::<RC2Solver<SolverIterations>>(),
-        Method::PredictNaive => {
-            if let Some(filename) = conf.save_benchmark {
-                writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}",
-                    conf.game.to_string(), conf.position, conf.method, "",
-                    naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_rc_nimbers_len, naive_iters.rebuilding_rc).unwrap();
-            }
-        },
+    println!("Predicted number of naive iterations to solve {}: {}", conf.game.to_string(), naive_iters);
+    for method in conf.method.iter().copied() {
+        match method {
+            Method::Naive => conf.run::<NaiveSolver<SolverIterations>>(method),
+            Method::RC => conf.run::<RCSolver<SolverIterations>>(method),
+            Method::RC2 => conf.run::<RC2Solver<SolverIterations>>(method),
+            Method::PredictNaive => {
+                if let Some(ref filename) = conf.benchmark_filename {
+                    writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}",
+                        conf.game.to_string(), conf.position, method, "",
+                        naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_rc_nimbers_len, naive_iters.rebuilding_rc).unwrap();
+                }
+            },
+        }
     }
 }
