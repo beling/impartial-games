@@ -32,7 +32,7 @@ struct Conf {
     game: Game,
 
     /// Method(s) of calculating nimbers
-    #[arg(short='m', default_value="naive", action=ArgAction::Append, value_delimiter=',')]
+    #[arg(short='m', ignore_case = true, default_value="naive", action=ArgAction::Append, value_delimiter=',')]
     pub method: Vec<Method>,
 
     /// The (last) position which nimber should be found
