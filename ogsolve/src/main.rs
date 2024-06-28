@@ -43,9 +43,9 @@ struct Conf {
     #[arg(short='p', long, default_value_t = false)]
     pub print_nimbers: bool,
 
-    /// Save benchmark results to ogsolve_benchmark.csv file
-    #[arg(short='b', long="benchmark", default_value_t = false)]
-    pub save_benchmark: bool,
+    /// Save the benchmark results to a file with the given name or to ogsolve_benchmark.csv
+    #[arg(short='b', long="benchmark", num_args=0..=1, default_missing_value="ogsolve_benchmark.csv", value_name="FILE_NAME")]
+    pub save_benchmark: Option<String>,
 }
 
 /// Calculates checksum with fletcher 32 algorithm.
@@ -61,14 +61,14 @@ fn checksum(nimbers: &[u16]) -> u32 {
 
 /// Either opens or crates (and than put headers inside) and returns the file with given `file_name` (+`csv` extension).
 fn csv_file(file_name: &str, header: &str) -> File {
-    let file_name = format!("{}.csv", file_name);
+    //let file_name = format!("{}.csv", file_name);
     let file_already_existed = std::path::Path::new(&file_name).exists();
     let mut file = std::fs::OpenOptions::new().append(true).create(true).open(&file_name).unwrap();
     if !file_already_existed { writeln!(file, "{}", header).unwrap(); }
     file
 }
 
-const BENCHMARK_FILENAME: &'static str = "ogsolve_benchmark";
+//const BENCHMARK_FILENAME: &'static str = "ogsolve_benchmark";
 const BENCHMARK_HEADER: &'static str = "game, positions, method, checksum, take_iter, break_iter, rc_effort, rc_rebuilds";
 
 impl Conf {
@@ -88,8 +88,8 @@ impl Conf {
         let stats = solver.stats();
         println!("{} iterations: {}", self.method, stats);
         solver.print_nimber_stat().unwrap();
-        if self.save_benchmark {
-            writeln!(csv_file(BENCHMARK_FILENAME, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}",
+        if let Some(filename) = self.save_benchmark {
+            writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}",
                 solver.game().to_string(), self.position, self.method, checksum,
                 stats.taking, stats.breaking, stats.rebuilding_rc_nimbers_len, stats.rebuilding_rc).unwrap();
         }
@@ -105,8 +105,8 @@ fn main() {
         Method::RC => conf.run::<RCSolver<SolverIterations>>(),
         Method::RC2 => conf.run::<RC2Solver<SolverIterations>>(),
         Method::PredictNaive => {
-            if conf.save_benchmark {
-                writeln!(csv_file(BENCHMARK_FILENAME, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}",
+            if let Some(filename) = conf.save_benchmark {
+                writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}",
                     conf.game.to_string(), conf.position, conf.method, "",
                     naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_rc_nimbers_len, naive_iters.rebuilding_rc).unwrap();
             }
