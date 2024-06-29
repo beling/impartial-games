@@ -9,6 +9,7 @@ pub struct RC2Solver<S = ()> {
     nimbers: Vec<u16>,
     nimber_num: NimberStats,
     split: [RCSplit; 2],
+    pub dynamic_rebuild: Option<u8>,
     pub stats: S
 }
 
@@ -22,12 +23,12 @@ impl<S: SolverEvent> Solver for RC2Solver<S> {
 
     #[inline] fn with_stats(game: Game, stats: S) -> Self {
         let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::new(), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
+        Self { game, breaking, nimbers: Vec::new(), nimber_num: Default::default(), dynamic_rebuild: Some(0), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
     }
 
     #[inline] fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
         let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
+        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), dynamic_rebuild: Some(0), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
     }
 
     fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
@@ -53,6 +54,13 @@ impl<S> RC2Solver<S> {
         false   // R does not exist so nothing is inside, R_positions is empty
     } else {
         split[D as usize].in_r(nim_pos, D)
+    }
+}
+
+impl<S: SolverEvent> RC2Solver<S> {
+    #[inline] fn rebuild_rc(&mut self, d: usize) {
+        self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
+        self.stats.rebuilding_rc(self.nimbers.len());
     }
 }
 
@@ -107,15 +115,24 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
         self.nimbers.push(result>>1);
         for d in [0, 1] {
             if self.breaking[d].is_empty() { continue; }
-            if self.split[d].r.contain_nimber(result) {
-                if n != 0 { self.split[d].r_positions.push(n); }
-                if self.split[d].should_rebuild_d(result, &self.nimber_num) {
-                    self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
-                    self.stats.rebuilding_rc(self.nimbers.len());
+            if let Some(rebuild_threshold) = self.dynamic_rebuild {
+                if self.split[d].r.contain_nimber(result) {
+                    if n != 0 { self.split[d].r_positions.push(n); }
+                    if self.split[d].should_rebuild_d(result, &self.nimber_num, rebuild_threshold) {
+                        self.rebuild_rc(d);
+                    }
+                    //self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
+                } else {
+                    self.split[d].add_to_c(result);
                 }
-                self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
             } else {
-                self.split[d].add_to_c(result);
+                if n.is_power_of_two() {
+                    self.rebuild_rc(d);
+                } else if self.split[d].r.contain_nimber(result) {
+                    if n != 0 { self.split[d].r_positions.push(n); }
+                } else {
+                    self.split[d].add_to_c(result);
+                }
             }
         }
         //self.split.rebuild(&self.nimber, &self.nimbers);
