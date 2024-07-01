@@ -10,11 +10,11 @@ pub enum Method {
     /// RC
     RC,
     /// RC with static moments of rebuilding the R/C split
-    RCs,
+    RCS,
     /// RC2
     RC2,
     /// RC2 with static moments of rebuilding the R/C split
-    RC2s,
+    RC2S,
     /// Predict the number of iterations of naive methods without calculating nimbers
     PredictNaive
 }
@@ -24,9 +24,9 @@ impl Display for Method {
         match *self {
             Method::Naive|Method::PredictNaive => write!(f, "naive"),
             Method::RC => write!(f, "rc"),
-            Method::RCs => write!(f, "rcs"),
+            Method::RCS => write!(f, "rcs"),
             Method::RC2 => write!(f, "rc2"),
-            Method::RC2s => write!(f, "rc2s"),
+            Method::RC2S => write!(f, "rc2s"),
         }
     }
 }
@@ -116,9 +116,9 @@ fn main() {
         match method {
             Method::Naive => conf.run::<NaiveSolver<SolverIterations>>(method),
             Method::RC => conf.run::<RCSolver<true, SolverIterations>>(method),
-            Method::RCs => conf.run::<RCSolver<false, SolverIterations>>(method),
+            Method::RCS => conf.run::<RCSolver<false, SolverIterations>>(method),
             Method::RC2 => conf.run::<RC2Solver<true, SolverIterations>>(method),
-            Method::RC2s => conf.run::<RC2Solver<false, SolverIterations>>(method),
+            Method::RC2S => conf.run::<RC2Solver<false, SolverIterations>>(method),
             Method::PredictNaive => {
                 if let Some(ref filename) = conf.benchmark_filename {
                     writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}, {}",
