@@ -15,9 +15,9 @@ impl Default for RCSplit {
 
 impl RCSplit {
     pub fn new(d: u16) -> Self {
-        let mut r = [0; 1<<(16-6)];
-        r[0] = d as u64+1;   // adds d to r
-        Self { r, c: [0; 1<<(16-6)], max_c: 0, r_positions: Default::default() }
+        let mut result = Self { r: [0; 1<<(16-6)], c: [0; 1<<(16-6)], max_c: 0, r_positions: Default::default() };
+        result.r[0] = d as u64+1;   // adds d to r
+        result
     }
 
     #[inline] pub fn can_add_to_c(&self, nimber: u16) -> bool {
@@ -84,12 +84,7 @@ impl RCSplit {
         self.r_positions.clear();
     }
 
-    pub fn rebuild(&mut self, stats: &NimberStats, nimbers: &[u16]) {
-        self.clear();
-        self.r[0] = 1;
-        for nimber in stats.nimbers_from_most_common(0) {
-            self.classify(nimber);
-        }
+    fn fill_r_positions(&mut self, nimbers: &[u16]) {
         for position in 1..nimbers.len() {
             if self.r.contain_nimber(nimbers[position]) {
                 self.r_positions.push(position);
@@ -97,12 +92,36 @@ impl RCSplit {
         }
     }
 
-    pub fn rebuild_d(&mut self, stats: &NimberStats, nimbers: &[u16], d: u16) {
-        self.clear();
-        self.r[0] = d as u64+1; // adds (0,0) (i.e. 0th bit) if d=0 and (0,1) (i.e. 1st bit) if d=1 to R
-        for nimber in stats.nimbers_from_most_common(d) {   // skip (0,d)
-            self.classify_d(nimber, d);
+    pub fn update(&mut self, stats: &NimberStats, nimbers: &[u16]) {
+        let mut result = Self::new(0);
+        let last_nimber = *nimbers.last().unwrap();
+        let mut nimbers_sorted = stats.nimbers_from_most_common(0).into_iter();
+        while let Some(nimber) = nimbers_sorted.next() {
+            if nimber == last_nimber {
+                if result.can_add_to_c(nimber) {
+                    result.add_to_c(nimber);    // last_nimber is now in C
+                    break;
+                } else {
+                    return; // last_nimber still clarified to R, so nothing change
+                }
+            }
+            result.add_to(nimber, self.c.contain_nimber(nimber));    // copying clarification from self
         }
+        *self = result;
+        for nimber in nimbers_sorted { self.classify(nimber); }
+        self.fill_r_positions(nimbers);
+    }
+
+    pub fn rebuild(&mut self, stats: &NimberStats, nimbers: &[u16]) {
+        self.clear();
+        self.r[0] = 1;
+        for nimber in stats.nimbers_from_most_common(0) {
+            self.classify(nimber);
+        }
+        self.fill_r_positions(nimbers);
+    }
+
+    fn fill_r_positions_d(&mut self, nimbers: &[u16]) {
         for position in 1..nimbers.len() {
             if self.r.contain_nimber((nimbers[position]<<1) | (position as u16 & 1)) {
                 self.r_positions.push(position);
@@ -110,8 +129,37 @@ impl RCSplit {
         }
     }
 
-    pub fn should_rebuild_d(&self, recent_nimber: u16, stats: &NimberStats, rebuild_threshold: u8) -> bool {
-        let r_occ = stats.occurences[recent_nimber as usize] + rebuild_threshold as u32;
+    pub fn update_d(&mut self, stats: &NimberStats, nimbers: &[u16], d: u16) {
+        let mut result = Self::new(d);
+        let last_nimber = (*nimbers.last().unwrap() << 1) | ((nimbers.len()-1) as u16 & 1);
+        let mut nimbers_sorted = stats.nimbers_from_most_common(d).into_iter();
+        while let Some(nimber) = nimbers_sorted.next() {
+            if nimber == last_nimber {
+                if result.can_add_to_c(nimber ^ d) {
+                    result.add_to_c(nimber);    // last_nimber is now in C
+                    break;
+                } else {
+                    return; // last_nimber still clarified to R, so nothing change
+                }
+            }
+            result.add_to(nimber, self.c.contain_nimber(nimber));    // copying clarification from self
+        }
+        *self = result;
+        for nimber in nimbers_sorted { self.classify_d(nimber, d); }
+        self.fill_r_positions_d(nimbers);
+    }
+    
+    pub fn rebuild_d(&mut self, stats: &NimberStats, nimbers: &[u16], d: u16) {
+        self.clear();
+        self.r[0] = d as u64+1; // adds (0,0) (i.e. 0th bit) if d=0 and (0,1) (i.e. 1st bit) if d=1 to R
+        for nimber in stats.nimbers_from_most_common(d) {   // skip (0,d)
+            self.classify_d(nimber, d);
+        }
+        self.fill_r_positions_d(nimbers);
+    }
+    
+    pub fn should_rebuild_d(&self, recent_nimber: u16, stats: &NimberStats) -> bool {
+        let r_occ = stats.occurences[recent_nimber as usize];
         for c in 0..=stats.max {
             let c_occ = stats.occurences[c as usize];
             if c_occ == 0 || !self.c.contain_nimber(c) { continue; }
@@ -123,10 +171,9 @@ impl RCSplit {
         false
     }
 
-    /// rebuild_threshold should be 0
-    pub fn should_rebuild(&self, recent_nimber: u16, stats: &NimberStats, rebuild_threshold: u8) -> bool {
+    pub fn should_rebuild(&self, recent_nimber: u16, stats: &NimberStats) -> bool {
         //self.should_rebuild_d(recent_nimber, stats) //OK as 0 is in r
-        let r_occ = stats.occurences[recent_nimber as usize] + rebuild_threshold as u32;
+        let r_occ = stats.occurences[recent_nimber as usize];
         for c in 1..=stats.max {
             let c_occ = stats.occurences[c as usize];
             if c_occ == 0 || !self.c.contain_nimber(c) { continue; }
