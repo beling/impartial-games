@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{BitSet, stats::NimberStats};
+use crate::{stats::NimberStats, BitSet, SolverEvent};
 
 pub(crate) struct RCSplit {
     pub(crate) r: [u64; 1<<(16-6)],
@@ -92,7 +92,7 @@ impl RCSplit {
         }
     }
 
-    pub fn update(&mut self, stats: &NimberStats, nimbers: &[u16]) {
+    pub fn update(&mut self, stats: &NimberStats, nimbers: &[u16], solver_stats: &mut impl SolverEvent) {
         let mut result = Self::new(0);
         let last_nimber = *nimbers.last().unwrap();
         let mut nimbers_sorted = stats.nimbers_from_most_common(0).into_iter();
@@ -102,6 +102,7 @@ impl RCSplit {
                     result.add_to_c(nimber);    // last_nimber is now in C
                     break;
                 } else {
+                    solver_stats.rebuilding_rc(0);
                     return; // last_nimber still clarified to R, so nothing change
                 }
             }
@@ -110,15 +111,17 @@ impl RCSplit {
         *self = result;
         for nimber in nimbers_sorted { self.classify(nimber); }
         self.fill_r_positions(nimbers);
+        solver_stats.rebuilding_rc(nimbers.len());
     }
 
-    pub fn rebuild(&mut self, stats: &NimberStats, nimbers: &[u16]) {
+    pub fn rebuild(&mut self, stats: &NimberStats, nimbers: &[u16], solver_stats: &mut impl SolverEvent) {
         self.clear();
         self.r[0] = 1;
         for nimber in stats.nimbers_from_most_common(0) {
             self.classify(nimber);
         }
         self.fill_r_positions(nimbers);
+        solver_stats.rebuilding_rc(nimbers.len());
     }
 
     fn fill_r_positions_d(&mut self, nimbers: &[u16]) {
@@ -129,7 +132,7 @@ impl RCSplit {
         }
     }
 
-    pub fn update_d(&mut self, stats: &NimberStats, nimbers: &[u16], d: u16) {
+    pub fn update_d(&mut self, stats: &NimberStats, nimbers: &[u16], d: u16, solver_stats: &mut impl SolverEvent) {
         let mut result = Self::new(d);
         let last_nimber = (*nimbers.last().unwrap() << 1) | ((nimbers.len()-1) as u16 & 1);
         let mut nimbers_sorted = stats.nimbers_from_most_common(d).into_iter();
@@ -139,6 +142,7 @@ impl RCSplit {
                     result.add_to_c(nimber);    // last_nimber is now in C
                     break;
                 } else {
+                    solver_stats.rebuilding_rc(0);
                     return; // last_nimber still clarified to R, so nothing change
                 }
             }
@@ -147,15 +151,17 @@ impl RCSplit {
         *self = result;
         for nimber in nimbers_sorted { self.classify_d(nimber, d); }
         self.fill_r_positions_d(nimbers);
+        solver_stats.rebuilding_rc(nimbers.len());
     }
     
-    pub fn rebuild_d(&mut self, stats: &NimberStats, nimbers: &[u16], d: u16) {
+    pub fn rebuild_d(&mut self, stats: &NimberStats, nimbers: &[u16], d: u16, solver_stats: &mut impl SolverEvent) {
         self.clear();
         self.r[0] = d as u64+1; // adds (0,0) (i.e. 0th bit) if d=0 and (0,1) (i.e. 1st bit) if d=1 to R
         for nimber in stats.nimbers_from_most_common(d) {   // skip (0,d)
             self.classify_d(nimber, d);
         }
         self.fill_r_positions_d(nimbers);
+        solver_stats.rebuilding_rc(nimbers.len());
     }
     
     pub fn should_rebuild_d(&self, recent_nimber: u16, stats: &NimberStats) -> bool {

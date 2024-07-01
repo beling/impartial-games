@@ -13,15 +13,15 @@ pub struct SolverIterations {
     pub taking: usize,
     pub breaking: usize,
     pub rebuilding_rc: usize,
-    pub rebuilding_rc_nimbers_len: usize
+    pub rebuilding_r_positions: usize
 }
 
 impl SolverEvent for SolverIterations {
     #[inline] fn take_option(&mut self) { self.taking += 1; }
     #[inline] fn break_option(&mut self) { self.breaking += 1; }
-    #[inline] fn rebuilding_rc(&mut self, nimbers_len: usize) {
+    #[inline] fn rebuilding_rc(&mut self, rebuilding_r_positions: usize) {
          self.rebuilding_rc += 1;
-         self.rebuilding_rc_nimbers_len += nimbers_len
+         self.rebuilding_r_positions += rebuilding_r_positions
     }
 }
 
@@ -30,7 +30,7 @@ impl Display for SolverIterations {
         if self.taking != 0 { write!(f, "taking: {}, ", self.taking)?; }
         if self.breaking != 0 { write!(f, "breaking: {}, ", self.breaking)?; }
         write!(f, "total: {}", self.taking+self.breaking)?;
-        if self.rebuilding_rc != 0 { write!(f, ", RC effort/rebuilds: {}/{}", self.rebuilding_rc_nimbers_len, self.rebuilding_rc)?; }
+        if self.rebuilding_rc != 0 { write!(f, ", RC effort/rebuilds: {}/{}", self.rebuilding_r_positions, self.rebuilding_rc)?; }
         Ok(())
     }
 }

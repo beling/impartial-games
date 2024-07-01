@@ -113,8 +113,8 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
                 if self.split[d].r.contain_nimber(result) {
                     if n != 0 { self.split[d].r_positions.push(n); }
                     if self.split[d].should_rebuild_d(result, &self.nimber_num) {
-                        self.split[d].update_d(&self.nimber_num, &self.nimbers, d as u16);
-                        self.stats.rebuilding_rc(self.nimbers.len());
+                        self.split[d].update_d(&self.nimber_num, &self.nimbers, d as u16, &mut self.stats);
+                        //self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
                     }
                     //self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
                 } else {
@@ -122,8 +122,7 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
                 }
             } else {
                 if n.is_power_of_two() {
-                    self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16);
-                    self.stats.rebuilding_rc(self.nimbers.len());
+                    self.split[d].rebuild_d(&self.nimber_num, &self.nimbers, d as u16, &mut self.stats);
                 } else if self.split[d].r.contain_nimber(result) {
                     if n != 0 { self.split[d].r_positions.push(n); }
                 } else {

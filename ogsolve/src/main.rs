@@ -97,7 +97,7 @@ impl Conf {
         if let Some(ref filename) = self.benchmark_filename {
             writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}",
                 solver.game().to_string(), self.position, method, checksum,
-                stats.taking, stats.breaking, stats.rebuilding_rc_nimbers_len, stats.rebuilding_rc).unwrap();
+                stats.taking, stats.breaking, stats.rebuilding_r_positions, stats.rebuilding_rc).unwrap();
         }
     }    
 }
@@ -115,7 +115,7 @@ fn main() {
                 if let Some(ref filename) = conf.benchmark_filename {
                     writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}",
                         conf.game.to_string(), conf.position, method, "",
-                        naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_rc_nimbers_len, naive_iters.rebuilding_rc).unwrap();
+                        naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_r_positions, naive_iters.rebuilding_rc).unwrap();
                 }
             },
         }

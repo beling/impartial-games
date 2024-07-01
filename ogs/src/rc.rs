@@ -11,6 +11,7 @@ pub struct RCSolver<S = ()> {
     nimber_num: NimberStats,
     split: RCSplit,
     pub dynamic_rebuild: bool,
+    //nimbers_by_num: HashMap<u32, HashSet<u16>>,
     pub stats: S
 }
 
@@ -23,11 +24,11 @@ impl<S: SolverEvent> Solver for RCSolver<S> {
     #[inline] fn capacity(&self) -> usize { self.nimbers.capacity() }
 
     #[inline] fn with_stats(game: Game, stats: S) -> Self {
-        Self { game, nimbers: Vec::new(), nimber_num: Default::default(), dynamic_rebuild: true, stats, split: Default::default() }
+        Self { game, nimbers: Vec::new(), nimber_num: Default::default(), dynamic_rebuild: true, /*nimbers_by_num: Default::default(),*/ stats, split: Default::default() }
     }
 
     #[inline] fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
-        Self { game, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), dynamic_rebuild: true, stats, split: Default::default() }
+        Self { game, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), dynamic_rebuild: true, /*nimbers_by_num: Default::default(),*/ stats, split: Default::default() }
     }
     
     fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
@@ -75,17 +76,18 @@ impl<S: SolverEvent> Iterator for RCSolver<S> {
         self.nimber_num.count(result);
         self.nimbers.push(result);
         if self.dynamic_rebuild {
+            /*let result_occ = self.nimber_num.occurences[result as usize];
+            if result_occ > 1 { self.nimbers_by_num.get_mut(&(result_occ-1)).unwrap().remove(&result); }
+            self.nimbers_by_num.entry(result_occ).or_default().insert(result);*/
             if self.split.r.contain_nimber(result) {
                 if n != 0 { self.split.r_positions.push(n); }
                 if self.split.should_rebuild(result, &self.nimber_num) {
-                    self.split.update(&self.nimber_num, &self.nimbers);
-                    self.stats.rebuilding_rc(self.nimbers.len());
+                    self.split.update(&self.nimber_num, &self.nimbers, &mut self.stats);
                 }
             }
         } else {
             if n.is_power_of_two() {
-                self.split.rebuild(&self.nimber_num, &self.nimbers);
-                self.stats.rebuilding_rc(self.nimbers.len());
+                self.split.rebuild(&self.nimber_num, &self.nimbers, &mut self.stats);
             } else if self.split.r.contain_nimber(result) && n != 0 {
                 self.split.r_positions.push(n);
             }
