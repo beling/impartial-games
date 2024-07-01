@@ -5,6 +5,7 @@ mod stats;
 
 // solvers:
 mod naive;
+mod rcsplit;
 mod rc;
 mod rc2;
 

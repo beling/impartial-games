@@ -1,5 +1,6 @@
 use crate::{Solver, SolverEvent};
-use crate::{rc::RCSplit, Game, BreakingMoveIterator};
+use crate::{Game, BreakingMoveIterator};
+use crate::rcsplit::RCSplit;
 use crate::stats::NimberStats;
 use crate::BitSet;
 
