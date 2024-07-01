@@ -4,17 +4,16 @@ use crate::rcsplit::RCSplit;
 use crate::stats::NimberStats;
 use crate::BitSet;
 
-pub struct RC2Solver<S = ()> {
+pub struct RC2Solver<const DYNAMIC_REBUILD: bool = true, S = ()> {
     game: Game,
     breaking: [Vec<u8>; 2], // breaking moves splitted to even and odd
     nimbers: Vec<u16>,
     nimber_num: NimberStats,
     split: [RCSplit; 2],
-    pub dynamic_rebuild: bool,
     pub stats: S
 }
 
-impl<S: SolverEvent> Solver for RC2Solver<S> {   
+impl<const DYNAMIC_REBUILD: bool, S: SolverEvent> Solver for RC2Solver<DYNAMIC_REBUILD, S> {   
     type Stats = S;
     
     #[inline] fn stats(&self) -> &Self::Stats { &self.stats }
@@ -24,12 +23,12 @@ impl<S: SolverEvent> Solver for RC2Solver<S> {
 
     #[inline] fn with_stats(game: Game, stats: S) -> Self {
         let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::new(), nimber_num: Default::default(), dynamic_rebuild: true, stats, split: [RCSplit::new(0), RCSplit::new(1)] }
+        Self { game, breaking, nimbers: Vec::new(), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
     }
 
     #[inline] fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
         let breaking = Self::split_breaking_moves(&game);
-        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), dynamic_rebuild: true, stats, split: [RCSplit::new(0), RCSplit::new(1)] }
+        Self { game, breaking, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), stats, split: [RCSplit::new(0), RCSplit::new(1)] }
     }
 
     fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
@@ -40,7 +39,7 @@ impl<S: SolverEvent> Solver for RC2Solver<S> {
     }
 }
 
-impl<S> RC2Solver<S> {
+impl<const DYNAMIC_REBUILD: bool, S> RC2Solver<DYNAMIC_REBUILD, S> {
     fn split_breaking_moves(game: &Game) -> [Vec<u8>; 2] {
         let mut result = [Vec::<u8>::new(), Vec::<u8>::new()];
         for m in game.breaking.iter().copied() {
@@ -58,7 +57,7 @@ impl<S> RC2Solver<S> {
     }
 }
 
-impl<S: SolverEvent> Iterator for RC2Solver<S> {
+impl<const DYNAMIC_REBUILD: bool, S: SolverEvent> Iterator for RC2Solver<DYNAMIC_REBUILD, S> {
     type Item = u16;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -109,7 +108,7 @@ impl<S: SolverEvent> Iterator for RC2Solver<S> {
         self.nimbers.push(result>>1);
         for d in [0, 1] {
             if self.breaking[d].is_empty() { continue; }
-            if self.dynamic_rebuild {
+            if DYNAMIC_REBUILD {
                 if self.split[d].r.contain_nimber(result) {
                     if n != 0 { self.split[d].r_positions.push(n); }
                     if self.split[d].should_rebuild_d(result, &self.nimber_num) {

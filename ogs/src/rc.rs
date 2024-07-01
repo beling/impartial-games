@@ -5,17 +5,16 @@ use crate::BitSet;
 use crate::Solver;
 use crate::SolverEvent;
 
-pub struct RCSolver<S = ()> {
+pub struct RCSolver<const DYNAMIC_REBUILD: bool = true, S = ()> {
     game: Game,
     nimbers: Vec<u16>,
     nimber_num: NimberStats,
     split: RCSplit,
-    pub dynamic_rebuild: bool,
     //nimbers_by_num: HashMap<u32, HashSet<u16>>,
     pub stats: S
 }
 
-impl<S: SolverEvent> Solver for RCSolver<S> {   
+impl<const DYNAMIC_REBUILD: bool, S: SolverEvent> Solver for RCSolver<DYNAMIC_REBUILD, S> {   
     type Stats = S;
     
     #[inline] fn stats(&self) -> &Self::Stats { &self.stats }
@@ -24,11 +23,11 @@ impl<S: SolverEvent> Solver for RCSolver<S> {
     #[inline] fn capacity(&self) -> usize { self.nimbers.capacity() }
 
     #[inline] fn with_stats(game: Game, stats: S) -> Self {
-        Self { game, nimbers: Vec::new(), nimber_num: Default::default(), dynamic_rebuild: true, /*nimbers_by_num: Default::default(),*/ stats, split: Default::default() }
+        Self { game, nimbers: Vec::new(), nimber_num: Default::default(), /*nimbers_by_num: Default::default(),*/ stats, split: Default::default() }
     }
 
     #[inline] fn with_capacity_stats(game: Game, capacity: usize, stats: S) -> Self {
-        Self { game, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), dynamic_rebuild: true, /*nimbers_by_num: Default::default(),*/ stats, split: Default::default() }
+        Self { game, nimbers: Vec::with_capacity(capacity), nimber_num: Default::default(), /*nimbers_by_num: Default::default(),*/ stats, split: Default::default() }
     }
     
     fn print_nimber_stat_to(&self, f: &mut dyn std::io::Write) -> std::io::Result<()> {
@@ -37,7 +36,7 @@ impl<S: SolverEvent> Solver for RCSolver<S> {
     }
 }
 
-impl<S: SolverEvent> Iterator for RCSolver<S> {
+impl<const DYNAMIC_REBUILD: bool, S: SolverEvent> Iterator for RCSolver<DYNAMIC_REBUILD, S> {
     type Item = u16;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -75,7 +74,7 @@ impl<S: SolverEvent> Iterator for RCSolver<S> {
         }
         self.nimber_num.count(result);
         self.nimbers.push(result);
-        if self.dynamic_rebuild {
+        if DYNAMIC_REBUILD {
             /*let result_occ = self.nimber_num.occurences[result as usize];
             if result_occ > 1 { self.nimbers_by_num.get_mut(&(result_occ-1)).unwrap().remove(&result); }
             self.nimbers_by_num.entry(result_occ).or_default().insert(result);*/

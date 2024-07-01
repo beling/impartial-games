@@ -9,8 +9,12 @@ pub enum Method {
     Naive,
     /// RC
     RC,
+    /// RC with static moments of rebuilding the R/C split
+    RCs,
     /// RC2
     RC2,
+    /// RC2 with static moments of rebuilding the R/C split
+    RC2s,
     /// Predict the number of iterations of naive methods without calculating nimbers
     PredictNaive
 }
@@ -20,7 +24,9 @@ impl Display for Method {
         match *self {
             Method::Naive|Method::PredictNaive => write!(f, "naive"),
             Method::RC => write!(f, "rc"),
+            Method::RCs => write!(f, "rcs"),
             Method::RC2 => write!(f, "rc2"),
+            Method::RC2s => write!(f, "rc2s"),
         }
     }
 }
@@ -73,7 +79,7 @@ fn csv_file(file_name: &str, header: &str) -> File {
 }
 
 //const BENCHMARK_FILENAME: &'static str = "ogsolve_benchmark";
-const BENCHMARK_HEADER: &'static str = "game, positions, method, checksum, take_iter, break_iter, rc_effort, rc_rebuilds";
+const BENCHMARK_HEADER: &'static str = "game, positions, method, checksum, take_iter, break_iter, rc_effort, rc_rebuilds, time_micros";
 
 impl Conf {
     fn predicted_naive_stats(&self) -> SolverIterations {
@@ -95,9 +101,9 @@ impl Conf {
         println!(" iterations: {}", stats);
         if self.print_stats { solver.print_nimber_stat().unwrap(); }
         if let Some(ref filename) = self.benchmark_filename {
-            writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}",
+            writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}, {}",
                 solver.game().to_string(), self.position, method, checksum,
-                stats.taking, stats.breaking, stats.rebuilding_r_positions, stats.rebuilding_rc).unwrap();
+                stats.taking, stats.breaking, stats.rebuilding_r_positions, stats.rebuilding_rc, time.as_micros()).unwrap();
         }
     }    
 }
@@ -109,13 +115,15 @@ fn main() {
     for method in conf.method.iter().copied() {
         match method {
             Method::Naive => conf.run::<NaiveSolver<SolverIterations>>(method),
-            Method::RC => conf.run::<RCSolver<SolverIterations>>(method),
-            Method::RC2 => conf.run::<RC2Solver<SolverIterations>>(method),
+            Method::RC => conf.run::<RCSolver<true, SolverIterations>>(method),
+            Method::RCs => conf.run::<RCSolver<false, SolverIterations>>(method),
+            Method::RC2 => conf.run::<RC2Solver<true, SolverIterations>>(method),
+            Method::RC2s => conf.run::<RC2Solver<false, SolverIterations>>(method),
             Method::PredictNaive => {
                 if let Some(ref filename) = conf.benchmark_filename {
-                    writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}",
+                    writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}, {}",
                         conf.game.to_string(), conf.position, method, "",
-                        naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_r_positions, naive_iters.rebuilding_rc).unwrap();
+                        naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_r_positions, naive_iters.rebuilding_rc, "").unwrap();
                 }
             },
         }
