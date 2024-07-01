@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File, io::Write};
+use std::{fmt::Display, fs::File, io::Write, time::Instant};
 
 use clap::{Parser, ValueEnum, ArgAction};
 use ogs::{Game, NaiveSolver, RC2Solver, RCSolver, Solver, SolverIterations};
@@ -83,12 +83,14 @@ impl Conf {
     fn run<S: Solver<Stats = SolverIterations>>(&self, method: Method) /*where S::Stats: Default+Display*/ {        
         let mut solver = S::with_capacity(self.game.clone(), self.position+1);
         if self.print_nimbers { print!("Nimbers: ") }
+        let start_moment = Instant::now();
         for n in solver.by_ref().take(self.position+1) {
             if self.print_nimbers { print!(" {}", n) }
         }
+        let time = start_moment.elapsed();
         if self.print_nimbers { println!() }
         let checksum = checksum(solver.nimbers());
-        println!("{}: nimber of {}: {}, checksum: {:X}", method, self.position, solver.nimbers().last().unwrap(), checksum);
+        println!("{}: {:#.2?}, nimber of {}: {}, checksum: {:X}", method, time, self.position, solver.nimbers().last().unwrap(), checksum);
         let stats = solver.stats();
         println!(" iterations: {}", stats);
         if self.print_stats { solver.print_nimber_stat().unwrap(); }
