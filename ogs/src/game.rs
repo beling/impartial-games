@@ -112,15 +112,18 @@ impl Game {
 
     /// Try to calculates (pre-period, period) of the game using the nimbers of its few first positions.
     pub fn period(&self, nimbers: &[u16]) -> Option<(usize, usize)> {
-        let greatest_nonzero = *self.breaking.last().unwrap_or(&0) as usize;
+        let max_to_take = 
+            (self.taking_all.msb_index().unwrap_or(0) as u8)
+            .max(*self.breaking.last().unwrap_or(&0))
+            .max(*self.taking.last().unwrap_or(&0)) as usize;
         let len = nimbers.len();
-        for p in 1..len/2 {
-            let mut i = len - 1;
-            while i >= p && nimbers[i] == nimbers[i-p] {
-                i -= 1;
+        for period in 1..=len/2 {
+            let mut preperiod = len - period;
+            while preperiod > 0 && nimbers[preperiod-1] == nimbers[preperiod-1+period] {
+                preperiod -= 1;
             }
-            if len > 2*i + 2*p + greatest_nonzero {
-                return Some((i, p));
+            if len >= (2*preperiod + 2*period + max_to_take - 1).max(max_to_take+2) {
+                return Some((preperiod, period));
             }
         }
         None

@@ -13,6 +13,9 @@ pub trait BitSet {
     fn set_bit(&mut self, bit_nr: usize);
     fn get_bit(&self, bit_nr: usize) -> bool;
     fn try_get_bit(&self, bit_nr: usize) -> Option<bool>;
+
+    /// Returns the index of the most significant bit set.
+    fn msb_index(&self) -> Option<u16>;
 }
 
 /// Implemented by `Vec<u64>`.
@@ -61,6 +64,13 @@ impl BitSet for [u64] {
     fn try_get_bit(&self, bit_nr: usize) -> Option<bool> {
         Some(self.get(bit_nr/64)? & (1u64 << (bit_nr % 64) as u64) != 0)
     }
+    
+    fn msb_index(&self) -> Option<u16> {
+        for (i, v) in self.iter().copied().enumerate().rev() {
+            if v != 0 { return Some(64*(i as u16+1) - v.leading_zeros() as u16-1); }
+        }
+        None
+    }
 }
 
 impl SetConstructor for Vec<u64> {
@@ -86,5 +96,15 @@ pub(crate) mod tests {
         let mut s: Vec<u64> = Vec::with_max_nimber(64);     // insert_nimber needs mut
         for i in 0..=64 { s.add_nimber(i); }
         assert_eq!(s.mex(), 65);
+    }
+
+    #[test]
+    fn test_msb_index() {
+        assert_eq!(vec![].msb_index(), None);
+        assert_eq!(vec![0, 0, 0].msb_index(), None);
+        assert_eq!(vec![1, 0, 0].msb_index(), Some(0));
+        assert_eq!(vec![u64::MAX, 0, 0].msb_index(), Some(63));
+        assert_eq!(vec![123u64, 1].msb_index(), Some(64));
+        assert_eq!(vec![123u64, 2, 0].msb_index(), Some(65));
     }
 }
