@@ -79,7 +79,7 @@ fn csv_file(file_name: &str, header: &str) -> File {
 }
 
 //const BENCHMARK_FILENAME: &'static str = "ogsolve_benchmark";
-const BENCHMARK_HEADER: &'static str = "game, positions, method, checksum, take_iter, break_iter, rc_effort, rc_rebuilds, time_micros";
+const BENCHMARK_HEADER: &'static str = "game, positions, method, checksum, period, preperiod, take_iter, break_iter, rc_effort, rc_rebuilds, time_micros";
 
 impl Conf {
     fn predicted_naive_stats(&self) -> SolverIterations {
@@ -95,14 +95,23 @@ impl Conf {
         }
         let time = start_moment.elapsed();
         if self.print_nimbers { println!() }
+        let period = solver.period();
+        if let Some((preperiod, period)) = period {
+            println!("the game has period of length {period} and pre-period {preperiod}")
+        }
         let checksum = checksum(solver.nimbers());
         println!("{}: {:#.2?}, nimber of {}: {}, checksum: {:X}", method, time, self.position, solver.nimbers().last().unwrap(), checksum);
         let stats = solver.stats();
         println!(" iterations: {}", stats);
         if self.print_stats { solver.print_nimber_stat().unwrap(); }
         if let Some(ref filename) = self.benchmark_filename {
-            writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}, {}",
-                solver.game().to_string(), self.position, method, checksum,
+            let (p, pp) = if let Some((preperiod, period)) = period {
+                (period.to_string(), preperiod.to_string())
+            } else {
+                ("".to_owned(), "".to_owned())
+            };
+            writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}, {}, {}, {}",
+                solver.game().to_string(), self.position, method, checksum, p, pp,
                 stats.taking, stats.breaking, stats.rebuilding_r_positions, stats.rebuilding_rc, time.as_micros()).unwrap();
         }
     }    

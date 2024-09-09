@@ -24,4 +24,9 @@ pub trait Solver: Iterator<Item=u16> {
     fn print_nimber_stat(&self) -> std::io::Result<()> {
         self.print_nimber_stat_to(&mut std::io::stdout().lock())
     }
+
+    /// Try to calculates (pre-period, period) of the game using the nimbers calculated so far.
+    fn period(&self) -> Option<(usize, usize)> {
+        self.game().period(self.nimbers())
+    }
 }

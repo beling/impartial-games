@@ -1,6 +1,6 @@
 [package]
 name = "ogsolve"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Piotr Beling <piotr.beling@wmii.uni.lodz.pl>"]
 license = "GPL-3.0-or-later"
 description = "The program for solving octal games."
@@ -16,5 +16,5 @@ keywords = [ "game", "octal", "impartial", "solver"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ogs = { version="0.0", path = "../ogs" }
+ogs = { version=">=0.0.5", path = "../ogs" }
 clap = { version="4.0", features = ["derive"] }
