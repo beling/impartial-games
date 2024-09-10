@@ -112,17 +112,25 @@ impl Game {
 
     /// Try to calculates (pre-period, period) of the game using the nimbers of its few first positions.
     pub fn period(&self, nimbers: &[u16]) -> Option<(usize, usize)> {
-        let max_to_take = 
+        // uses Theorem 3.73 from https://dspace.cvut.cz/bitstream/handle/10467/82669/F8-DP-2019-Lomic-Simon-thesis.pdf
+        // which is based on Guy and Smiths THE G-VALUES OF VARIOUS GAMES 1956
+        let mut max_to_take = 
             (self.taking_all.msb_index().unwrap_or(0) as u8)
-            .max(*self.breaking.last().unwrap_or(&0))
-            .max(*self.taking.last().unwrap_or(&0)) as usize;
+            .max(*self.taking.last().unwrap_or(&0));
+
+        let log2mult = if let Some(b) = self.breaking.last() {   // has breaking moves?
+            max_to_take = max_to_take.max(*b);
+            1   // we need *2 (or <<1) for octal games
+        } else { 0 };   // and *1 (or <<0) otherwise
+
         let len = nimbers.len();
-        for period in 1..=len/2 {
+        for period in 1 .. (len >> log2mult) {
             let mut preperiod = len - period;
             while preperiod > 0 && nimbers[preperiod-1] == nimbers[preperiod-1+period] {
                 preperiod -= 1;
             }
-            if len >= (2*preperiod + 2*period + max_to_take - 1).max(max_to_take+2) {
+            //if len >= (2*preperiod + 2*period + max_to_take - 1).max(max_to_take+2) {
+            if len > ((preperiod + period) << log2mult) + max_to_take as usize {
                 return Some((preperiod, period));
             }
         }
