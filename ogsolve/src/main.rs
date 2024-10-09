@@ -62,8 +62,8 @@ struct Conf {
 fn checksum(nimbers: &[u16]) -> u32 {
     let mut checksum = (0u16, 0u16);
     for n in nimbers {
-        checksum.0 += checksum.0.wrapping_add(*n);
-        checksum.1 += checksum.1.wrapping_add(checksum.0);
+        checksum.0 = checksum.0.wrapping_add(*n);
+        checksum.1 = checksum.1.wrapping_add(checksum.0);
     }
     ((checksum.1 as u32) << 16) | checksum.0 as u32
 }
@@ -79,7 +79,7 @@ fn csv_file(file_name: &str, header: &str) -> File {
 }
 
 //const BENCHMARK_FILENAME: &'static str = "ogsolve_benchmark";
-const BENCHMARK_HEADER: &'static str = "game, positions, method, checksum, period, preperiod, take_iter, break_iter, rc_effort, rc_rebuilds, time_micros";
+const BENCHMARK_HEADER: &'static str = "game, positions, method, checksum, period, preperiod, take_iter, break_iter, rc_effort, rc_rebuilds, time_micros, zeros_count";
 
 impl Conf {
     fn predicted_naive_stats(&self) -> SolverIterations {
@@ -90,8 +90,10 @@ impl Conf {
         let mut solver = S::with_capacity(self.game.clone(), self.position+1);
         if self.print_nimbers { print!("Nimbers: ") }
         let start_moment = Instant::now();
+        let mut zeros = 0;
         for n in solver.by_ref().take(self.position+1) {
             if self.print_nimbers { print!(" {}", n) }
+            if n == 0 { zeros += 1}
         }
         let time = start_moment.elapsed();
         if self.print_nimbers { println!() }
@@ -100,7 +102,7 @@ impl Conf {
             println!("the game has period of length {period} and pre-period {preperiod}")
         }
         let checksum = checksum(solver.nimbers());
-        println!("{}: {:#.2?}, nimber of {}: {}, checksum: {:X}", method, time, self.position, solver.nimbers().last().unwrap(), checksum);
+        println!("{}: {:#.2?}, {} losing positions, nimber of {}: {}, checksum: {:X}", method, time, zeros, self.position, solver.nimbers().last().unwrap(), checksum);
         let stats = solver.stats();
         println!(" iterations: {}", stats);
         if self.print_stats { solver.print_nimber_stat().unwrap(); }
@@ -110,9 +112,9 @@ impl Conf {
             } else {
                 ("".to_owned(), "".to_owned())
             };
-            writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}, {}, {}, {}",
+            writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {:X}, {}, {}, {}, {}, {}, {}, {}, {}",
                 solver.game().to_string(), self.position, method, checksum, p, pp,
-                stats.taking, stats.breaking, stats.rebuilding_r_positions, stats.rebuilding_rc, time.as_micros()).unwrap();
+                stats.taking, stats.breaking, stats.rebuilding_r_positions, stats.rebuilding_rc, time.as_micros(), zeros).unwrap();
         }
     }    
 }
