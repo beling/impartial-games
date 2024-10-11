@@ -86,25 +86,27 @@ impl Conf {
         SolverIterations{ taking: self.game.taking_iters(self.position), breaking: self.game.breaking_naive_iters(self.position), ..Default::default() }
     }
 
-    fn run<S: Solver<Stats = SolverIterations>>(&self, method: Method) /*where S::Stats: Default+Display*/ {        
+    fn run<S: Solver<Stats = SolverIterations>>(&self, method: Method) /*where S::Stats: Default+Display*/ {
+        println!("Solving {} with {}:", self.game.to_string(), method);
         let mut solver = S::with_capacity(self.game.clone(), self.position+1);
-        if self.print_nimbers { print!("Nimbers: ") }
+        if self.print_nimbers { print!(" nimbers:") }
         let start_moment = Instant::now();
         let mut zeros = 0;
         for n in solver.by_ref().take(self.position+1) {
             if self.print_nimbers { print!(" {}", n) }
-            if n == 0 { zeros += 1}
+            if n == 0 { zeros += 1 }
         }
         let time = start_moment.elapsed();
         if self.print_nimbers { println!() }
         let period = solver.period();
         if let Some((preperiod, period)) = period {
-            println!("the game has period of length {period} and pre-period {preperiod}")
+            println!(" found period of length {period} and pre-period {preperiod}")
         }
         let checksum = checksum(solver.nimbers());
-        println!("{}: {:#.2?}, {} losing positions, nimber of {}: {}, checksum: {:X}", method, time, zeros, self.position, solver.nimbers().last().unwrap(), checksum);
+        println!(" nimber of {}: {}  losing positions: {:.2}%  checksum: {:X}", self.position, solver.nimbers().last().unwrap(), 100.0 * zeros as f64 / solver.nimbers().len() as f64, checksum);
         let stats = solver.stats();
-        println!(" iterations: {}", stats);
+        println!(" iterations:  {stats}");
+        println!(" calculation time: {time:#.2?}");
         if self.print_stats { solver.print_nimber_stat().unwrap(); }
         if let Some(ref filename) = self.benchmark_filename {
             let (p, pp) = if let Some((preperiod, period)) = period {

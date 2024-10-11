@@ -27,10 +27,10 @@ impl SolverEvent for SolverIterations {
 
 impl Display for SolverIterations {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.taking != 0 { write!(f, "taking: {}, ", self.taking)?; }
-        if self.breaking != 0 { write!(f, "breaking: {}, ", self.breaking)?; }
+        if self.taking != 0 { write!(f, "taking: {}  ", self.taking)?; }
+        if self.breaking != 0 { write!(f, "breaking: {}  ", self.breaking)?; }
         write!(f, "total: {}", self.taking+self.breaking)?;
-        if self.rebuilding_rc != 0 { write!(f, ", RC effort/rebuilds: {}/{}", self.rebuilding_r_positions, self.rebuilding_rc)?; }
+        if self.rebuilding_rc != 0 { write!(f, "  RC effort/rebuilds: {}/{}", self.rebuilding_r_positions, self.rebuilding_rc)?; }
         Ok(())
     }
 }
