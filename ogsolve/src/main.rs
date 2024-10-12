@@ -105,8 +105,7 @@ impl Conf {
         let checksum = checksum(solver.nimbers());
         println!(" nimber of {}: {}  losing positions: {:.2}%  checksum: {:X}", self.position, solver.nimbers().last().unwrap(), 100.0 * zeros as f64 / solver.nimbers().len() as f64, checksum);
         let stats = solver.stats();
-        println!(" iterations:  {stats}");
-        println!(" calculation time: {time:#.2?}");
+        println!(" iterations:  {stats}\n calculation time: {time:#.2?}");
         if self.print_stats { solver.print_nimber_stat().unwrap(); }
         if let Some(ref filename) = self.benchmark_filename {
             let (p, pp) = if let Some((preperiod, period)) = period {
@@ -124,7 +123,7 @@ impl Conf {
 fn main() {
     let conf: Conf = Conf::parse();
     let naive_iters = conf.predicted_naive_stats();
-    println!("Predicted number of naive iterations to solve {}: {}", conf.game.to_string(), naive_iters);
+    println!("Predicted number of naive iterations to solve {}:\n {}", conf.game.to_string(), naive_iters);
     for method in conf.method.iter().copied() {
         match method {
             Method::Naive => conf.run::<NaiveSolver<SolverIterations>>(method),
@@ -134,9 +133,10 @@ fn main() {
             Method::RC2S => conf.run::<RC2Solver<false, SolverIterations>>(method),
             Method::PredictNaive => {
                 if let Some(ref filename) = conf.benchmark_filename {
-                    writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}",
+                    writeln!(csv_file(&filename, BENCHMARK_HEADER), "{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}",
                         conf.game.to_string(), conf.position, method, "", "", "",
-                        naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_r_positions, naive_iters.rebuilding_rc, "").unwrap();
+                        naive_iters.taking, naive_iters.breaking, naive_iters.rebuilding_r_positions, naive_iters.rebuilding_rc,
+                        "", "").unwrap();
                 }
             },
         }
