@@ -1,7 +1,6 @@
 [package]
 name = "igs"
 version = "0.1.4"
-authors = ["Piotr Beling <piotr.beling@wmii.uni.lodz.pl>"]
 edition = "2021"
 license = "LGPL-3.0-or-later"
 description = "The library for solving impartial games."
@@ -15,10 +14,12 @@ keywords = [ "game", "impartial", "solver", "cram", "chomp" ]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ph = "0.8"
-binout = "0.2"
-csf = "0.1"
-bitm = "0.4"
+ph = "0.10"
+seedable_hash = "0.2"
+dyn_size_of = "0.4"
+binout = "0.3"
+csf = "0.2.0-alpha.2"
+bitm = "0.5"
 arrayvec = "0.7"
 co_sort = "0.2.*"
 #smallvec = "1.4.2"

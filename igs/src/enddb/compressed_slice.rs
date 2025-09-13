@@ -12,7 +12,8 @@ use crate::enddb::SortedPositionNimberMap;
 use crate::dbs::NimbersProvider;
 use csf::coding::{BuildCoding, BuildMinimumRedundancy, Coding, SerializableCoding};
 use std::borrow::Borrow;
-use ph::{BuildDefaultSeededHasher, BuildSeededHasher, GetSize};
+use seedable_hash::{BuildSeededHasher, BuildDefaultSeededHasher};
+use dyn_size_of::GetSize;
 
 /// Slice of the end database, usually compressed/succinct.
 pub trait CompressedSlice/*<InSliceGamePosition>: NimbersProvider<InSliceGamePosition>*/ {
@@ -44,7 +45,7 @@ pub trait CompressedSliceBuilder</*InSliceGamePosition,*/ UncompressedSlice>: fm
 }*/
 
 /// Generate value which is (we hope) unique for hash_builder.
-fn hasher_id<S: BuildSeededHasher>(seeded_hash_builder: &S) -> u64 {
+fn hasher_id<S: seedable_hash::BuildSeededHasher>(seeded_hash_builder: &S) -> u64 {
     seeded_hash_builder.hash_one(0xf178015a3109cc1du64, 1234)
 }
 
@@ -60,7 +61,7 @@ where InSliceGamePosition: std::hash::Hash, C: Coding<Value=u8>, S: BuildSeededH
 }
 
 impl<C, S> CompressedSlice for fp::CMap::<C, S>
-where C: SerializableCoding<Value=u8> + GetSize, S: BuildSeededHasher {
+where C: SerializableCoding<Value=u8>+GetSize, S: BuildSeededHasher {
 
     #[inline(always)]
     fn size_bytes(&self) -> usize {
@@ -75,28 +76,28 @@ where C: SerializableCoding<Value=u8> + GetSize, S: BuildSeededHasher {
 
 //#[derive(Default)]
 pub struct FPCMapBuilder<BC = BuildMinimumRedundancy, LSC = fp::OptimalLevelSize, CSB = fp::LoMemAcceptEquals, S = BuildDefaultSeededHasher>
-where LSC: fp::LevelSizeChooser, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher {
+where LSC: fp::LevelSizer, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher {
     pub conf: fp::CMapConf<BC, LSC, CSB, S>
 }
 
 impl<BC, LSC, CSB, S> From<fp::CMapConf<BC, LSC, CSB, S>> for FPCMapBuilder<BC, LSC, CSB, S>
-where LSC: fp::LevelSizeChooser, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher {
+where LSC: fp::LevelSizer, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher {
     fn from(conf: fp::CMapConf<BC, LSC, CSB, S>) -> Self {
         Self { conf }
     }
 }
 
 impl<BC, LSC, CSB, S> fmt::Display for FPCMapBuilder<BC, LSC, CSB, S>
-where BC: BuildCoding<u8>, LSC: fmt::Display + fp::LevelSizeChooser, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher {
+where BC: BuildCoding<u8>, LSC: fmt::Display + fp::LevelSizer, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "FPCMap__{}__{}_levels__h{:X}", self.conf.coding.name(), self.conf.level_size_chooser, hasher_id(&self.conf.hash))
+        write!(f, "FPCMap__{}__{}_levels__h{:X}", self.conf.coding.name(), self.conf.level_sizer, hasher_id(&self.conf.hash))
     }
 }
 
 impl<BC, LSC, InSliceGamePosition, CSB, S, HMS, Coding> CompressedSliceBuilder<HashMap<InSliceGamePosition, u8, HMS>> for FPCMapBuilder<BC, LSC, CSB, S>
 where BC: BuildCoding<u8, Coding=Coding> + Clone,
       Coding: csf::coding::Coding<Value=u8> + csf::coding::SerializableCoding + GetSize,
-        LSC: fp::LevelSizeChooser + fmt::Display + Clone,
+        LSC: fp::LevelSizer + fmt::Display + Clone,
       InSliceGamePosition: std::hash::Hash + Clone,
       CSB: fp::CollisionSolverBuilder + fp::IsLossless + Clone,
       S: BuildSeededHasher + Clone
@@ -120,7 +121,7 @@ impl<BC, LSC, InSliceGamePosition, CSB, S, Coding> CompressedSliceBuilder<Sorted
 for FPCMapBuilder<BC, LSC, CSB, S>
     where BC: BuildCoding<u8, Coding=Coding> + Clone,
       Coding: csf::coding::Coding<Value=u8> + csf::coding::SerializableCoding + GetSize,
-      LSC: fp::LevelSizeChooser + fmt::Display + Clone,
+      LSC: fp::LevelSizer + fmt::Display + Clone,
       InSliceGamePosition: std::hash::Hash + Clone,
       CSB: fp::CollisionSolverBuilder + fp::IsLossless + Clone,
       S: BuildSeededHasher + Clone
@@ -162,32 +163,27 @@ impl<S: BuildSeededHasher> CompressedSlice for fp::Map<S> {
 
 //#[derive(Default)]
 pub struct FPMapBuilder<LSC = fp::OptimalLevelSize, CSB = fp::LoMemAcceptEquals, S = BuildDefaultSeededHasher>
-    where LSC: fp::SimpleLevelSizeChooser, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher
+    where LSC: fp::LevelSizer, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher
 {
     pub conf: fp::MapConf<LSC, CSB, S>
 }
 
 impl<LSC, CSB, S> From<fp::MapConf<LSC, CSB, S>> for FPMapBuilder<LSC, CSB, S>
-    where LSC: fp::SimpleLevelSizeChooser, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher {
+    where LSC: fp::LevelSizer, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher {
     fn from(conf: fp::MapConf<LSC, CSB, S>) -> Self {
         Self { conf }
     }
 }
 
-impl<LSC: fmt::Display + fp::SimpleLevelSizeChooser, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher> fmt::Display for FPMapBuilder<LSC, CSB, S> {
+impl<LSC: fmt::Display + fp::LevelSizer, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher> fmt::Display for FPMapBuilder<LSC, CSB, S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hid = hasher_id(&self.conf.hash);
-        if self.conf.bits_per_value == 0 {
-            write!(f, "FPMap__{}_levels__h{:X}", self.conf.level_size_chooser, hid)
-        } else {
-            write!(f, "FPMap{}__{}_levels__h{:X}", self.conf.bits_per_value, self.conf.level_size_chooser, hid)
-        }
+        write!(f, "FPMap__{}_levels__h{:X}", self.conf.level_sizer, hasher_id(&self.conf.hash))
     }
 }
 
 impl<LSC, InSliceGamePosition, CSB, S, HMS> CompressedSliceBuilder<HashMap<InSliceGamePosition, u8, HMS>>
 for FPMapBuilder<LSC, CSB, S>
-    where LSC: fp::SimpleLevelSizeChooser + fmt::Display + Clone,
+    where LSC: fp::LevelSizer + fmt::Display + Clone,
           InSliceGamePosition: std::hash::Hash + Clone,
           CSB: fp::CollisionSolverBuilder + Clone,
           S: BuildSeededHasher + Clone
@@ -209,7 +205,7 @@ for FPMapBuilder<LSC, CSB, S>
 
 impl<LSC, InSliceGamePosition, CSB, S> CompressedSliceBuilder<SortedPositionNimberMap<InSliceGamePosition>>
 for FPMapBuilder<LSC, CSB, S>
-    where LSC: fp::SimpleLevelSizeChooser + fmt::Display + Clone,
+    where LSC: fp::LevelSizer + fmt::Display + Clone,
           InSliceGamePosition: std::hash::Hash + Clone,
           CSB: fp::CollisionSolverBuilder + Clone,
           S: BuildSeededHasher + Clone
@@ -254,23 +250,23 @@ where C: SerializableCoding<Value=u8> + GetSize, GS: GroupSize, SS: SeedSize, S:
 
 //#[derive(Default)]
 pub struct FPCMap2Builder<GS = TwoToPowerBitsStatic::<4>, SS = TwoToPowerBitsStatic<2>, BC = BuildMinimumRedundancy, LSC = fp::OptimalLevelSize, S = BuildDefaultSeededHasher>
-    where GS: GroupSize, SS: SeedSize, LSC: fp::LevelSizeChooser, S: BuildSeededHasher {
+    where GS: GroupSize, SS: SeedSize, LSC: fp::LevelSizer, S: BuildSeededHasher {
     pub conf: fp::GOCMapConf<BC, LSC, GS, SS, S>
 }
 
 impl<GS: GroupSize, SS: SeedSize, BC, LSC, S> From<fp::GOCMapConf<BC, LSC, GS, SS, S>> for FPCMap2Builder<GS, SS, BC, LSC, S>
-where LSC: fp::LevelSizeChooser, S: BuildSeededHasher {
+where LSC: fp::LevelSizer, S: BuildSeededHasher {
     fn from(conf: fp::GOCMapConf<BC, LSC, GS, SS, S>) -> Self {
         Self { conf }
     }
 }
 
 impl<GS: GroupSize, SS: SeedSize, BC, LSC, S> fmt::Display for FPCMap2Builder<GS, SS, BC, LSC, S>
-where BC: BuildCoding<u8>, LSC: fmt::Display + fp::LevelSizeChooser, S: BuildSeededHasher {
+where BC: BuildCoding<u8>, LSC: fmt::Display + fp::LevelSizer, S: BuildSeededHasher {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "FPGOMap__{}__{}_levels__gr_seed_{}b_size_{}b__h{:X}",
                 self.conf.coding.name(),
-                self.conf.level_size_chooser,
+                self.conf.level_sizer,
                 Into::<u8>::into(self.conf.goconf.bits_per_seed), 
                 Into::<u8>::into(self.conf.goconf.bits_per_group),
                hasher_id(&self.conf.goconf.hash_builder))
@@ -281,7 +277,7 @@ impl<BC, LSC, InSliceGamePosition, S, HMS, Coding> CompressedSliceBuilder<HashMa
 for FPCMap2Builder<TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, BC, LSC, S>
     where BC: BuildCoding<u8, Coding=Coding> + Clone,
           Coding: csf::coding::Coding<Value=u8> + csf::coding::SerializableCoding + GetSize,
-        LSC: fp::LevelSizeChooser + fmt::Display + Clone,
+        LSC: fp::LevelSizer + fmt::Display + Clone,
           InSliceGamePosition: std::hash::Hash + Clone,
           S: BuildSeededHasher + Clone
 {
@@ -304,7 +300,7 @@ impl<BC, LSC, InSliceGamePosition, S, Coding> CompressedSliceBuilder<SortedPosit
 for FPCMap2Builder<TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>, BC, LSC, S>
     where BC: BuildCoding<u8, Coding=Coding> + Clone,
           Coding: csf::coding::Coding<Value=u8> + csf::coding::SerializableCoding + GetSize,
-          LSC: fp::LevelSizeChooser + fmt::Display + Clone,
+          LSC: fp::LevelSizer + fmt::Display + Clone,
           InSliceGamePosition: std::hash::Hash + Clone,
           S: BuildSeededHasher + Clone
 {

@@ -1,7 +1,6 @@
 [package]
 name = "ogsolve"
 version = "0.0.7"
-authors = ["Piotr Beling <piotr.beling@wmii.uni.lodz.pl>"]
 license = "GPL-3.0-or-later"
 description = "The program for solving octal games."
 edition = "2021"

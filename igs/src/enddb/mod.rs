@@ -230,7 +230,7 @@ impl<C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::CMap::<C, S>>
         verifier: Checker
     ) -> EndDbBuilder<SlicesProvider, FPCMapBuilder<BC, LSC, CSB, S>, Checker, fp::CMap::<C, S>>
         where BC: BuildCoding<u8, Coding=C>,
-              LSC: fp::LevelSizeChooser+Display+Clone,
+              LSC: fp::LevelSizer+Display+Clone,
               CSB: fp::CollisionSolverBuilder
     {
         EndDbBuilder::<SlicesProvider, FPCMapBuilder<BC, LSC, CSB, S>, Checker, fp::CMap::<C, S>> {
@@ -244,7 +244,7 @@ impl<C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::CMap::<C, S>>
     pub fn build_with_fpcmap_conf<BC, LSC, CSB>(slice_provider: SlicesProvider, fpcconf: fp::CMapConf<BC, LSC, CSB, S>)
         -> EndDbBuilder<SlicesProvider, FPCMapBuilder<BC, LSC, CSB, S>, (), fp::CMap::<C, S>>
         where BC: BuildCoding<u8, Coding=C>,
-              LSC: fp::LevelSizeChooser+Display+Clone,
+              LSC: fp::LevelSizer+Display+Clone,
               CSB: fp::CollisionSolverBuilder
     {
         Self::build_with_fpcmap_conf_verifier(slice_provider, fpcconf, ())
@@ -282,7 +282,7 @@ impl<GS, SS, C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::GOCMap::<C, GS
         fpcconf: fp::GOCMapConf<BC, LSC, GS, SS, S>,
         verifier: Checker
     ) -> EndDbBuilder<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, Checker, fp::GOCMap::<C, GS, SS, S>>
-        where BC: BuildCoding<u8, Coding=C>, LSC: fp::LevelSizeChooser+Display+Clone
+        where BC: BuildCoding<u8, Coding=C>, LSC: fp::LevelSizer+Display+Clone
     {
         EndDbBuilder::<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, Checker, fp::GOCMap::<C, GS, SS, S>> {
             enddb: Self::with_fpcmap2(slice_provider),
@@ -294,7 +294,7 @@ impl<GS, SS, C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::GOCMap::<C, GS
     #[inline]
     pub fn build_with_fpcmap2_conf<BC, LSC>(slice_provider: SlicesProvider, fpcconf: fp::GOCMapConf<BC, LSC, GS, SS, S>)
                                               -> EndDbBuilder<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, (), fp::GOCMap::<C, GS, SS, S>>
-        where BC: BuildCoding<u8, Coding=C>, LSC: fp::LevelSizeChooser+Display+Clone
+        where BC: BuildCoding<u8, Coding=C>, LSC: fp::LevelSizer+Display+Clone
     {
         Self::build_with_fpcmap2_conf_verifier(slice_provider, fpcconf, ())
     }
@@ -329,7 +329,7 @@ impl<SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::Map::<S>>
         fpconf: fp::MapConf<LSC, CSB, S>,
         verifier: Checker
     ) -> EndDbBuilder<SlicesProvider, FPMapBuilder<LSC, CSB, S>, Checker, fp::Map::<S>>
-        where LSC: fp::SimpleLevelSizeChooser+Display+Clone,
+        where LSC: fp::LevelSizer+Display+Clone,
               CSB: fp::CollisionSolverBuilder
     {
         EndDbBuilder::<SlicesProvider, FPMapBuilder<LSC, CSB, S>, Checker, fp::Map::<S>> {
@@ -342,7 +342,7 @@ impl<SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::Map::<S>>
     #[inline]
     pub fn build_with_fpmap_conf<LSC, CSB>(slice_provider: SlicesProvider, fpconf: fp::MapConf<LSC, CSB, S>)
                                                    -> EndDbBuilder<SlicesProvider, FPMapBuilder<LSC, CSB, S>, (), fp::Map::<S>>
-        where LSC: fp::SimpleLevelSizeChooser+Display+Clone,
+        where LSC: fp::LevelSizer+Display+Clone,
               CSB: fp::CollisionSolverBuilder
     {
         Self::build_with_fpmap_conf_verifier(slice_provider, fpconf, ())
