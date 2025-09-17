@@ -6,11 +6,11 @@ use crate::{solver::{PruningMethod, print_nimber_of_decomposable, Without}, tt::
 #[derive(Args, Clone, Copy)]
 pub struct Conf {
     /// Number of rows
-    #[arg(short='r', long)]
+    #[arg()]
     rows: u8,
 
     /// Number of columns
-    #[arg(short='c', long)]
+    #[arg()]
     cols: u8,
 
     /// Maximum number of columns of positions included in the end database or 0 for no limit
