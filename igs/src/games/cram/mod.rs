@@ -69,7 +69,7 @@ impl DecomposableGame for Cram {
     type DecomposablePosition = u64;
     type Successors<'c> = CramSimpleMovesIterator;
     type HeuristicallyOrderedSuccessors<'c> = Cram2ColumnsMovesIterator;
-    //type HeuristicallyOrderedSuccessors = CramOptimalMovesIterator;
+    //type HeuristicallyOrderedSuccessors<'c> = CramOptimalMovesIterator;
     type Components<'c> = <DecomposedCramPosition as IntoIterator>::IntoIter;
 
     #[inline(always)]

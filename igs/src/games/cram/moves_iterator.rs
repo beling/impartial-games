@@ -5,6 +5,9 @@ use std::iter::FusedIterator;
 use std::collections::BinaryHeap;
 use std::cmp::Reverse;
 
+/// Generates moves in the following order:
+/// - first, all vertical moves in increasing fields order,
+/// - next, all horizontal moves in increasing fields order.
 pub struct CramSimpleMovesIterator {
     position: u64,
     horizontal_moves_left: u64,
@@ -56,13 +59,28 @@ impl ExactSizeIterator for CramSimpleMovesIterator {
 impl FusedIterator for CramSimpleMovesIterator {}
 
 
-
+/// Generates moves in the following order:
+/// - first, all vertical moves starting from the central column;
+/// - next, all horizontal moves starting from the central row.
 pub struct Cram2ColumnsMovesIterator {
+    /// the position whose successors are generated
     position: u64,
+
+    /// all horizontal moves left to generate
     horizontal_moves_left: u64,
+
+    /// mask that restrict horizontal moves;
+    /// at the beginning it contains a central row, then it is expanded by two rows (one up and one down)
     horizontal_moves_mask: u64,
+
+    /// all vertical moves left to generate
     vertical_moves_left: u64,
+
+    /// mask that restrict vertical moves;
+    /// at the beginning it contains a central column, then it is expanded by two columns (one left and one right)
     vertical_moves_mask: u64,
+
+    /// number of boards columns
     number_of_columns: u8
 }
 
@@ -122,7 +140,9 @@ impl ExactSizeIterator for Cram2ColumnsMovesIterator {
 impl FusedIterator for Cram2ColumnsMovesIterator {}
 
 
-
+/// Generates moves in the following order:
+/// - first, all vertical moves starting from the central column (adding one column at a time, alternating between left and right);
+/// - next, all horizontal moves in increasing fields order.
 pub struct CramCenterFirstMovesIterator {
     position: u64,
     horizontal_moves_left: u64,

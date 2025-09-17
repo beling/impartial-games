@@ -27,10 +27,10 @@ impl<SliceType> From<&EndDb<&Cram, SliceType>> for CramDifficultEvaluator {
     fn from(enddb: &EndDb<&Cram, SliceType>) -> Self {
         let size = (enddb.slices.len() * (1<<32)) as u64;
         Self { outside_mask:
-        if size == 0 { !0 }
-        // !((size.next_power_of_two()).wrapping_sub(1) //??
-        else if size.is_power_of_two() { !(size.wrapping_sub(1)) }
-        else { !((size.next_power_of_two()>>1).wrapping_sub(1)) }
+            if size == 0 { u64::MAX }
+            // !((size.next_power_of_two()).wrapping_sub(1) //??
+            else if size.is_power_of_two() { !(size.wrapping_sub(1)) }
+            else { !((size.next_power_of_two()>>1).wrapping_sub(1)) }
         }
     }
 }
