@@ -30,7 +30,7 @@ where G: SimpleGame,
     };
     let calc_time = now.elapsed();
     println!("Nimber of initial position: {nimber}");
-    println!("Calculation time: {calc_time:?}");
+    println!("Calculation time: {calc_time:.2?}");
 }
 
 pub fn print_nimber_of_decomposable<'a, G, S>(solver: &mut S, method: PruningMethod)
@@ -46,5 +46,5 @@ where G: DecomposableGame,
     };
     let calc_time = now.elapsed();
     println!("Nimber of initial position: {nimber}");
-    println!("Calculation time: {calc_time:?}");
+    println!("Calculation time: {calc_time:.2?}");
 }
