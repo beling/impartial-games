@@ -2,7 +2,7 @@ use crate::dbs::{NimbersProvider, NimbersStorer, HasLen};
 use crate::game::{Game, SerializableGame};
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::io;
+use std::io::{self, BufReader};
 use std::path::Path;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, BufWriter, Write};
@@ -32,7 +32,7 @@ where G: Game + SerializableGame,
       UnprotectedTT: NimbersStorer<G::Position>,
       ProtectPred: Fn(&G, &G::Position) -> bool
 {
-    pub fn new<P: AsRef<Path>>(game: &'g G, backup_file_name: P, should_be_protected: ProtectPred, mut unprotected_part: UnprotectedTT) -> Self {
+    pub fn new<P: AsRef<Path>>(game: &'g G, backup_file_name: P, should_be_protected: ProtectPred, mut unprotected_part: UnprotectedTT, positions_per_flush: usize) -> Self {
         let mut protected_part = HashMap::<G::Position, u8>::new();
         let mut backup_position = 0;
         let mut backup = OpenOptions::new()
@@ -42,13 +42,14 @@ where G: Game + SerializableGame,
             //.truncate(false)
             .open(backup_file_name)
             .unwrap();
+        let mut buf_backup = BufReader::new(backup);
         let mut backup_has_extra_positions = false;
-        while let Ok(position) = game.read_position(&mut backup) {
+        while let Ok(position) = game.read_position(&mut buf_backup) {
             let mut nimber = 0u8;
-            if backup.read_exact(std::slice::from_mut(&mut nimber)).is_ok() {
+            if buf_backup.read_exact(std::slice::from_mut(&mut nimber)).is_ok() {
                 if should_be_protected(game, &position) {
                     protected_part.store_nimber(position, nimber);
-                    backup_position = backup.stream_position().unwrap();
+                    backup_position = buf_backup.stream_position().unwrap();
                 } else {    // file has been created with different predicate and some position are not protected now:
                     unprotected_part.store_nimber(position, nimber);
                     backup_has_extra_positions = true;
@@ -57,8 +58,9 @@ where G: Game + SerializableGame,
                 break;
             }
         }
+        backup = buf_backup.into_inner();
         backup.seek(SeekFrom::Start(backup_position)).unwrap();
-        let mut backup = BufWriter::with_capacity(game.position_size_bytes() + 1, backup);
+        let mut backup = BufWriter::with_capacity((game.position_size_bytes() + 1) * positions_per_flush, backup);
         if backup_has_extra_positions {
             backup.rewind().unwrap();
             for (p, n) in &protected_part {
@@ -119,7 +121,7 @@ impl<'g, G, UnprotectedTT, ProtectPred, F> NimbersStorer<G::Position> for Protec
             self.backup.write_all(&buff);*/
             self.game.write_position(&mut self.backup, &position).expect("ProtectedTT cannot write the position to the backup");
             self.backup.write_all(&nimber.to_ne_bytes()).expect("ProtectedTT cannot write the nimber to the backup");
-            self.backup.flush().expect("ProtectedTT cannot flush the backup");
+            //self.backup.flush().expect("ProtectedTT cannot flush the backup");
             self.protected_part.store_nimber(position, nimber)
         } else {
             self.unprotected_part.store_nimber(position, nimber)

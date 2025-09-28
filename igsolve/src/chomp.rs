@@ -78,7 +78,7 @@ impl Conf {
             let tt = ProtectedTT::new(game, 
                 format!("chomp_{}x{}_TT.bin", self.cols, self.rows),
                 |_, p| p.count_ones() as u16 >= min_fields_to_protect,
-                tt);
+                tt, 128);
             self.run_with_tt_cdb(game, method, tt, cdb);
         } else {
             self.run_with_tt_cdb(game, method, tt, cdb);
