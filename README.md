@@ -27,22 +27,29 @@ Here I provide the nimbers calculated using my software.
 
 ## Cram (under the normal play convention)
 
-|       | 4 | 5 | 6 | 7 |   8   |   9   |   10  |   11  |
-|------:|:-:|:-:|:-:|:-:|:-----:|:-----:|:-----:|:-----:|
-| **4** | 0 | 2 | 0 | 3 |   0   |   1   |   0   | **1** |
-| **5** | - | 0 | 2 | 1 |   1   |   1   | **2** |   0   |
-| **6** | - | - | 0 | 5 |   0   | **1** |   0   |   ?   |
-| **7** | - | - | - | 1 | **3** | **1** |   ?   |   ?   |
+|       | 4 | 5 | 6 | 7 |   8   |   9   |   10  |   11  |   12  |   13  |   14  |   15  |
+|------:|:-:|:-:|:-:|:-:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+| **4** | 0 | 2 | 0 | 3 |   0   |   1   |   0   | **1** |   0   |   3   |   0   | **4** |
+| **5** | - | 0 | 2 | 1 |   1   |   1   | **2** |   0   | **≥3**|   ?   |   ?   |   ?   |
+| **6** | - | - | 0 | 5 |   0   | **1** |   0   |   ?   |   0   |   ?   |   0   |   ?   |
+| **7** | - | - | - | 1 | **3** | **1** |   ?   |   ?   |   ?   |   ?   |   ?   |   ?   |
 
 The table shows the nimbers of initial [cram](<https://en.wikipedia.org/wiki/Cram_(game)>) positions for different board sizes computed so far.
 Note that the symmetry strategy implies that even-by-even boards are losing and therefore of nimber 0 (the second player can win by responding with moves symmetrical to the center of the board).
 
-To the best of my knowledge, the bold values (for the largest boards: $9 \times 7$, $8 \times 7$, $9 \times 6$, $10 \times 5$, $11 \times 4$) were calculated by me and published here for the first time.
+To the best of my knowledge, the bold values (for the largest boards: $9 \times 7$, $8 \times 7$, $9 \times 6$, $10 \times 5$, $11 \times 4$, $15 \times 4$, $12 \times 5$) were calculated by me and published here for the first time.
 
 The nimbers of the smaller boards were earlier computed by [Glop](http://sprouts.tuxfamily.org/wiki/doku.php?id=records), which is the solver developed by Lemoine and Viennot.
 Nimbers of most boards no larger than $5 \times 7$ were first given by Martin Schneider in his master's thesis entitled *Das spiel juvavum* in 2009.
 Uiterwijk reported that the $11 \times 5$ board is losing (and thus of nimber 0) in his paper [*Solving Cram Using Combinatorial Game Theory* (Advances in Computer Games: 16th International Conference, ACG 2019, Macao, China, August 11–13, 2019)](https://dl.acm.org/doi/10.1007/978-3-030-65883-0_8).
+
+Initially, I did not calculate the nimbers of boards where one of the dimensions exceeded $11$.
+However, this changed when Thomas Plick sent me the nimber calculated with his own program for a $13 \times 4$ board, motivating me to continue the calculations.
+
 I have verified the correctness of all the nimbers in the table with my solver.
+In most cases (for example, for $13 \times 4$), my solver took no more than a few minutes of calculation.
+
+
 
 # Publications and citations
 When using my software for research purposes, please cite the following paper which details the key algorithms used:
