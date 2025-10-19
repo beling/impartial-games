@@ -43,7 +43,7 @@ The nimbers of the smaller boards were earlier computed by [Glop](http://sprouts
 Nimbers of most boards no larger than $5 \times 7$ were first given by Martin Schneider in his master's thesis entitled *Das spiel juvavum* in 2009.
 Uiterwijk reported that the $11 \times 5$ board is losing (and thus of nimber 0) in his paper [*Solving Cram Using Combinatorial Game Theory* (Advances in Computer Games: 16th International Conference, ACG 2019, Macao, China, August 11–13, 2019)](https://dl.acm.org/doi/10.1007/978-3-030-65883-0_8).
 
-Initially, I did not calculate the nimbers of boards where one of the dimensions exceeded $11$.
+Initially, I did not calculate the nimbers of boards where one of the dimensions exceeded 11.
 However, this changed when Thomas Plick sent me the nimber calculated with his own program for a $13 \times 4$ board, motivating me to continue the calculations.
 
 I have verified the correctness of all the nimbers in the table with my solver.
