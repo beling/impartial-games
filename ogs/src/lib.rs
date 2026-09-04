@@ -9,7 +9,7 @@ mod rcsplit;
 mod rc;
 mod rc2;
 
-pub use set::BitSet;
+pub use set::{BitSet, SetConstructor};
 pub use game::{Game, BreakingMoveIterator};
 pub use stats::{SolverEvent, SolverIterations};
 
