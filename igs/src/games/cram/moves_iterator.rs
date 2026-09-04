@@ -1,3 +1,4 @@
+//! Iterators over the moves (successors) of Cram positions, generating them in various orders.
 use crate::game::Game;
 use super::Cram;
 use crate::bit::{lowest_bit_of, ExtraBitMethods};
@@ -9,13 +10,18 @@ use std::cmp::Reverse;
 /// - first, all vertical moves in increasing fields order,
 /// - next, all horizontal moves in increasing fields order.
 pub struct CramSimpleMovesIterator {
+    /// The position whose successors are generated.
     position: u64,
+    /// The horizontal moves left to generate.
     horizontal_moves_left: u64,
+    /// The vertical moves left to generate.
     vertical_moves_left: u64,
+    /// The number of the board columns.
     number_of_columns: u8
 }
 
 impl CramSimpleMovesIterator {
+    /// Constructs the iterator over the moves (successors) of the given `position`.
     pub fn new(cram: &Cram, position: <Cram as Game>::Position) -> Self {
         Self {
             position,
@@ -85,6 +91,8 @@ pub struct Cram2ColumnsMovesIterator {
 }
 
 impl Cram2ColumnsMovesIterator {
+    /// Constructs the iterator over the moves (successors) of the given `position`,
+    /// which generates them in heuristic order (from the center of the board outwards).
     pub fn new(cram: &Cram, position: <Cram as Game>::Position) -> Self {
         Self {
             position,
@@ -153,6 +161,8 @@ pub struct CramCenterFirstMovesIterator {
 }
 
 impl CramCenterFirstMovesIterator {
+    /// Constructs the iterator over the moves (successors) of the given `position`,
+    /// which generates them in heuristic order (from the center of the board outwards).
     pub fn new(cram: &Cram, position: <Cram as Game>::Position) -> Self {
         Self {
             position,
@@ -212,17 +222,24 @@ impl FusedIterator for CramCenterFirstMovesIterator {}
 
 
 
+/// Iterator over the moves (successors) of a Cram position that generates them
+/// in heuristic order: the moves closer to the center of the board first.
+/// (Each move is scored with the distances of its squares to the center of the board.)
 pub struct CramOptimalMovesIterator {
+    /// The moves left to generate, ordered by their scores (the best first).
     values: BinaryHeap<(Reverse<u8>, u64)>
 }
 
 impl CramOptimalMovesIterator {
+    /// Adds to each column/row height its distance to the center.
     fn add_dist_to_center_penalty(values: &mut [u8]) {
         let center = values.len() as u8 / 2;
         for i in 0..center { values[i as usize] += center-i; }
         for i in center+1..values.len() as u8 { values[i as usize] += i-center; }
     }
 
+    /// Constructs the iterator over the moves (successors) of the given `position`,
+    /// which generates them in heuristic order (the moves closer to the center of the board first).
     pub fn new(cram: &Cram, position: <Cram as Game>::Position) -> Self {
         let mut columns = Vec::with_capacity(cram.number_of_cols as _);
         let mut p = position;

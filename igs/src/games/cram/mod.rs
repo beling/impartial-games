@@ -1,3 +1,15 @@
+//! Cram - a combinatorial game in which two players take turns placing a domino
+//! (horizontally or vertically) on a grid, on two empty squares;
+//! the player who cannot move loses.
+//!
+//! See: <https://en.wikipedia.org/wiki/Cram_(game)>
+//!
+//! A position is represented by a 64-bit bitboard (one bit per square; set bits
+//! denote the empty squares). Positions and their components are kept in normalized
+//! (canonical) form - the smallest among the images under the symmetries of the board.
+//! As positions can become decomposable (split into independent regions of empty squares),
+//! [`Cram`] implements [`DecomposableGame`](crate::game::DecomposableGame).
+
 use std::collections::HashMap;
 use std::fmt;
 
@@ -21,13 +33,22 @@ pub mod slices_provider;
 #[cfg(feature = "nauty-Traces-sys")] pub use graph_canon::GraphCanonTT;
 
 #[derive(Clone)]
+/// Cram game (see the [module documentation](self) for the rules and position representation).
 pub struct Cram {
-    rotated_row: Box<[u64]>,  // indexed by a single row
+    /// For each possible (single) row, its image rotated by 90 degrees right.
+    rotated_row: Box<[u64]>,
+    /// Mask of the first (leftmost) column of the board.
     first_column_mask: u64,
+    /// Mask of the last (rightmost) column of the board.
     last_column_mask: u64,
+    /// Mask of the first (topmost) row of the board.
     first_row_mask: u64,
-    outside_embedded_rect_mask: u64,    // bits that will be outside the board after rotated by 90 degree.
+    /// Bits that lie outside the biggest square embedded in the board
+    /// (they prevent rotating a position by 90 degrees).
+    outside_embedded_rect_mask: u64,
+    /// The number of columns of the board.
     number_of_cols: u8,
+    /// The number of rows of the board.
     number_of_rows: u8
 }
 
@@ -122,9 +143,15 @@ impl Cram {
         }
     }
 
+    /// Returns the number of columns of the board.
     #[inline(always)] pub fn number_of_columns(&self) -> u8 { self.number_of_cols }
+    /// Returns the number of rows of the board.
     #[inline(always)] pub fn number_of_rows(&self) -> u8 { self.number_of_rows }
 
+    /// Constructs the position from a string, in which each empty square is represented
+    /// by a space or `_`, each occupied square by `#`, and each new row by `\\`, `|` or a newline.
+    ///
+    /// Panics if `s` does not fit on the board or contains unexpected characters.
     pub fn pos_from_str(&self, s: &str) -> u64 {
         let mut result = 0;
         let mut col = 0;
@@ -159,6 +186,8 @@ impl Cram {
         result
     }
 
+    /// Converts the `position` to a string, in which each empty square is represented
+    /// by `empty`, each occupied square by `occupied`, and rows are separated by `sep`.
     pub fn pos_to_custom_str(&self, mut pos: u64, empty: char, occupied: char, sep: char) -> String {
         if pos == 0 { return occupied.into() }
         let mut result = String::new();
@@ -173,12 +202,16 @@ impl Cram {
         result
     }
 
+    /// Converts the `position` to a multi-line string
+    /// (empty squares are `_`, occupied ones are `#`, rows are separated by newlines).
     pub fn pos_to_multi_line_str(&self, pos: u64) -> String {
         let mut r = self.pos_to_custom_str(pos, '_', '#', '\n');
         r.push('\n');
         r
     }
 
+    /// Converts the `position` to a single-line string
+    /// (empty squares are `_`, occupied ones are `#`, rows are separated by `|`).
     pub fn pos_to_one_line_str(&self, pos: u64) -> String {
         self.pos_to_custom_str(pos, '_', '#', '|')
     }
@@ -272,9 +305,13 @@ impl Cram {
         res
     }
 
+    /// Returns the `position` shifted one row up.
     #[inline(always)] fn shifted_up(&self, p: u64) -> u64 { p >> self.number_of_cols }
+    /// Returns the `position` shifted one column left.
     #[inline(always)] fn shifted_left(&self, p: u64) -> u64  { (p & !self.first_column_mask) >> 1 }
+    /// Returns the `position` shifted one column right.
     #[inline(always)] fn shifted_right(&self, p: u64) -> u64  { (p & !self.last_column_mask) << 1 }
+    /// Returns the `position` shifted one row down.
     #[inline(always)] fn shifted_down(&self, p: u64) -> u64  { p << self.number_of_cols }
 
     /// Returns all tufts, i.e. cells of `p` that have exactly one neighbor.
@@ -421,6 +458,8 @@ impl Cram {
         //self.last_column_mask | d_l | (d_r >> 1)
     }
 
+    /// Adds the `component` to `result` unless an equal component is already there
+    /// (nimbers of two equal components xor to 0, so then both components are dropped).
     #[inline(always)]
     fn push_or_remove(result: &mut DecomposedCramPosition, component: u64) {
         if let Some(in_vec_index) = result.iter().position(|x| *x == component) {
@@ -520,6 +559,7 @@ impl Cram {
         return true;
     }
 
+    /// Returns the mask of the central column of the `position`.
     pub fn center_column(&self, mut position: u64) -> u64 {
         let without_2_first_cols = !(self.first_column_mask | (self.first_column_mask << 1));
         let mut center_col = self.first_column_mask;
@@ -533,6 +573,7 @@ impl Cram {
         center_col
     }
 
+    /// Returns the mask of the two central columns of the `position`.
     pub fn center_2columns(&self, mut position: u64) -> u64 {
         let mut center_col = self.first_column_mask | (self.first_column_mask << 1);
         let without_2_first_cols = !center_col;
@@ -546,6 +587,7 @@ impl Cram {
         center_col
     }
 
+    /// Returns the mask of the central row of the `position`.
     pub fn center_row(&self, mut position: u64) -> u64 {
         let mut center_row = self.first_row_mask;
         let dbl_number_of_cols = 2*self.number_of_cols;
