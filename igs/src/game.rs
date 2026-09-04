@@ -1,12 +1,15 @@
 #![macro_use]
+//! Traits that a game has to implement to be solvable by the library's solvers,
+//! and helper trait/method for serialization of game positions.
+
 pub use crate::nimber_set::{NimberSet, ExtendendNimberSet};
 use crate::dbs::NimbersProvider;
 use crate::solver::{SolverForSimpleGame, SolverForDecomposableGame, StatsCollector};
 use std::io;
 
 /// All games have to implement this trait, plus
-/// either SimpleGame (if game hasn't decomposable positions)
-/// or DecomposableGame (if game has decomposable positions).
+/// either [`SimpleGame`] (if game hasn't decomposable positions)
+/// or [`DecomposableGame`] (if game has decomposable positions).
 pub trait Game {
 
     /// In case of simple games, i.e. without decomposable positions: game position.
@@ -39,6 +42,8 @@ pub trait Game {
     fn initial_position(&self) -> Self::Position;
     
     /// Returns the outcome of the initial position if it is known.
+    /// `Some(true)` means that the position is winning (non-zero nimber),
+    /// `Some(false)` means that the position is losing (zero nimber).
     #[inline(always)]
     fn is_initial_position_winning(&self) -> Option<bool> { None }
 }
@@ -70,6 +75,10 @@ pub trait SimpleGame: Game {    // TODO separate life-time for solver?
 }
 
 /// Trait implemented by all games with decomposable positions.
+///
+/// A (possibly) decomposable position can be split into independent components,
+/// whose nimbers can be xored to obtain the nimber of the composed position
+/// (as a consequence of the [Sprague-Grundy theorem](https://en.wikipedia.org/wiki/Sprague%E2%80%93Grundy_theorem)).
 pub trait DecomposableGame: Game {
 
     /// Type of (possibly) decomposable position.
@@ -106,7 +115,12 @@ pub trait DecomposableGame: Game {
 }
 
 
+/// Nimbers provider that delegates `get_nimber` to `Game::try_solve_theoretically` of the given game.
+///
+/// It is returned by `Game::theoretical_solutions`, and can be used as an `const_db` of any solver
+/// to utilize theoretical solutions during search.
 pub struct TheoreticalSolutions<'a, G: Game + ?Sized> {
+    /// The game which positions are solved theoretically.
     pub game: &'a G
 }
 
@@ -118,6 +132,9 @@ impl<G: Game> NimbersProvider<G::Position> for TheoreticalSolutions<'_, G> {
 }
 
 /// Game whose position can be serialized and deserialized.
+///
+/// It is used (for example) by `transposition_table::ProtectedTT` to save/restore
+/// the protected part of the transposition table.
 pub trait SerializableGame: Game {
     /// Maximum number of bytes that `read_position`/`write_position` reads/writes.
     fn position_size_bytes(&self) -> usize;
@@ -129,7 +146,8 @@ pub trait SerializableGame: Game {
     fn read_position(&self, input: &mut dyn io::Read) -> io::Result<Self::Position>;
 }
 
-/// Implements SerializableGame for given Game with primitive (integer) representation of positions.
+/// Implements [`SerializableGame`] for the given `Game` whose position is represented
+/// by a primitive (integer) type: positions are read/written as native-endian binary numbers.
 macro_rules! impl_serializable_game_for {
     ($Game:ty) => {
         impl $crate::game::SerializableGame for $Game {

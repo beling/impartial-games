@@ -1,9 +1,17 @@
+//! Defines [`NimbersProvider`] and [`NimbersStorer`] traits (abstractions over game databases),
+//! implementations for standard collections (HashMap, BTreeMap, LruCache),
+//! and composable providers given as tuples.
+
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 
 #[cfg(feature = "lru")] use lru::LruCache;
 
 /// Provide nimbers.
+///
+/// Any database that maps game positions to nimbers can implement this trait.
+/// Note that `()` (the empty tuple type) implements it and always returns `None`,
+/// so it can be used in place of a database when no one is needed.
 pub trait NimbersProvider<GamePosition> {
     /// Returns nimber of the given `position` or `None` if `self` does not know the nimber.
     fn get_nimber(&self, position: &GamePosition) -> Option<u8>;
@@ -77,6 +85,7 @@ impl<GamePosition> NimbersProvider<GamePosition> for () {
     }
 }
 
+// Thanks to this, a single provider given as a one-element tuple can constitute end_db.
 impl<GamePosition, DB1: NimbersProvider<GamePosition>> NimbersProvider<GamePosition> for (DB1,) {
     #[inline(always)]
     fn get_nimber(&self, position: &GamePosition) -> Option<u8> {
@@ -89,7 +98,7 @@ impl<GamePosition, DB1: NimbersProvider<GamePosition>> NimbersProvider<GamePosit
     }
 }
 
-// Thanks to this two providers given as a tuple can constitute end_db.
+// Thanks to this, two providers given as a tuple can constitute end_db.
 impl<GamePosition, DB1: NimbersProvider<GamePosition>, DB2: NimbersProvider<GamePosition>> NimbersProvider<GamePosition>
 for (DB1, DB2) {
     #[inline(always)]
@@ -105,7 +114,7 @@ for (DB1, DB2) {
     }
 }
 
-// Thanks to this three providers given as a tuple can constitute end_db.
+// Thanks to this, three providers given as a tuple can constitute end_db.
 impl<GamePosition, DB1: NimbersProvider<GamePosition>, DB2: NimbersProvider<GamePosition>, DB3: NimbersProvider<GamePosition>> NimbersProvider<GamePosition>
 for (DB1, DB2, DB3) {
     #[inline(always)]
@@ -123,7 +132,7 @@ for (DB1, DB2, DB3) {
     }
 }
 
-// Thanks to this four providers given as a tuple can constitute end_db.
+// Thanks to this, four providers given as a tuple can constitute end_db.
 impl<GamePosition, DB1: NimbersProvider<GamePosition>, DB2: NimbersProvider<GamePosition>, DB3: NimbersProvider<GamePosition>, DB4: NimbersProvider<GamePosition>> NimbersProvider<GamePosition>
 for (DB1, DB2, DB3, DB4) {
     #[inline(always)]
@@ -150,7 +159,10 @@ impl<GamePosition> NimbersStorer<GamePosition> for () {
     }
 }
 
+/// Trait for types that know the number of their elements.
+/// It is usually implemented by nimbers providers.
 pub trait HasLen {
+    /// Returns the number of elements.
     fn len(&self) -> usize;
 }
 

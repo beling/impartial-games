@@ -43,16 +43,26 @@ pub trait BRDecomposableGameSolver<G> where G: DecomposableGame {
     /// Returns either the nimber of the `position` or `NOT_IN_SET` (possible only if the nimber is not in `requested_nimbers`).
     fn nimber_in_set(&mut self, position: &G::Position, requested_nimbers: G::NimberSet) -> u8;
 
+    /// Calculates nimber of the (non-decomposable) `position` treated as a component
+    /// (the position is not decomposed, i.e. `decompose` is never called for it).
     fn nimber_of_component_br(&mut self, position: &G::Position) -> u8;
 
+    /// Calculates nimber of the initial position of the game.
     fn nimber_of_initial_br(&mut self) -> u8;
 
+    /// Calculates nimber of the (possibly decomposable) `position`
+    /// as the xor of nimbers of all its components.
     fn nimber_br(&mut self, position: &<G as DecomposableGame>::DecomposablePosition) -> u8;
 
     /// Calculates nimber of decomposed `position` using aspiration sets method developed by Beling.
     /// Reports search progress (nimber about to analyze) to `progress_reporter`.
+    ///
+    /// The optional `position_is_winning` parameter is an outcome of the position
+    /// (`Some(false)` - losing, `Some(true)` - winning, `None` - unknown)
+    /// and can speed up calculations if its given.
     fn nimber_of_component_br_aspset_report_progress<PR: ProgressReporter>(&mut self, position: &G::Position, position_is_winning: Option<bool>, progress_reporter: PR) -> u8;
 
+    /// Calculates nimber of decomposed `position` using aspiration sets method developed by Beling.
     #[inline(always)] fn nimber_of_component_br_aspset(&mut self, position: &G::Position) -> u8 {
         self.nimber_of_component_br_aspset_report_progress(position, None, ())
     }
@@ -61,17 +71,23 @@ pub trait BRDecomposableGameSolver<G> where G: DecomposableGame {
     /// Reports search progress (nimber about to analyze) to `progress_reporter`.
     fn nimber_br_aspset_report_progress<PR: ProgressReporter + Clone>(&mut self, position: &<G as DecomposableGame>::DecomposablePosition, progress_reporter: PR) -> u8;
 
+    /// Calculates nimber of (possible decomposable) `position` using aspiration sets method developed by Beling.
     #[inline(always)] fn nimber_br_aspset(&mut self, position: &<G as DecomposableGame>::DecomposablePosition) -> u8 {
         self.nimber_br_aspset_report_progress(position, ())
     }
 
+    /// Calculates nimber of the initial position of the game using aspiration sets method developed by Beling.
+    /// Reports search progress (nimber about to analyze) to `progress_reporter`.
     fn nimber_of_initial_br_aspset_report_progress<PR: ProgressReporter>(&mut self, progress_reporter: PR) -> u8;
 
+    /// Calculates nimber of the initial position of the game using aspiration sets method developed by Beling.
     fn nimber_of_initial_br_aspset(&mut self) -> u8 { 
         self.nimber_of_initial_br_aspset_report_progress(())
     }
 }
 
+/// The value returned by `nimber_in_set`-like methods when the nimber of the position
+/// is known not to be included in the requested set of nimbers.
 const NOT_IN_SET: u8 = 255;
 
 
@@ -100,6 +116,7 @@ impl<G, TT, EDB, SORTER, STATS> Solver<'_, G, TT, EDB, SORTER, STATS>
     EDB: NimbersProvider<G::Position>,
     STATS: StatsCollector
 {
+    /// Calculates nimber of the initial position of the game, using the knowledge of its outcome.
     fn nimber_in_set_with_is_winning<F>(&mut self, is_winning: bool, nimber_in_set: F) -> u8 where F: Fn(&mut Self, G::Position, G::NimberSet)->u8 {
         if !is_winning { return 0; }
         let position = self.game.initial_position();
@@ -119,7 +136,9 @@ impl<G, TT, EDB, SORTER, STATS> Solver<'_, G, TT, EDB, SORTER, STATS>
           G::Position: Clone,
           STATS: StatsCollector
 {
-    /// caller have to call self.stats.pre() and optionally check const_db
+    /// Calculates the nimber of the simple-game `position` if it is included in `requested_nimbers`
+    /// (otherwise returns `NOT_IN_SET`).
+    /// Caller has to call self.stats.pre() and optionally check const_db.
     fn simple_nimber_in_set(&mut self, position: G::Position, requested_nimbers: G::NimberSet) -> u8 {
         // const_db is already checked by caller (ETC...)
         if let Some(v) = self.nimber_from_tt(&position) {   // this is checked by ETC but could changed
@@ -279,6 +298,10 @@ impl<G, TT, EDB, SORTER, STATS, DP> Solver<'_, G, TT, EDB, SORTER, STATS>
           STATS: StatsCollector,
           G::Position: Clone
 {
+    /// Calculates the nimber of the `position` (which is not decomposable)
+    /// if it is included in `requested_nimbers` (otherwise returns `NOT_IN_SET`).
+    /// 
+    /// `position` is not checked in const db, as it should be checked earlier by ETC.
     fn decomposable_nimber_in_set(&mut self, position: &G::Position, requested_nimbers: G::NimberSet) -> u8 {
         // const_db is already checked by ETC
         if let Some(v) = self.nimber_from_tt(&position) {   // this is checked by ETC but could changed

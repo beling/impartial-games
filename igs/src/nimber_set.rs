@@ -1,3 +1,11 @@
+//! Sets of nimbers, i.e. sets of (small, `u8`-stored) non-negative integers.
+//!
+//! The [`NimberSet`] trait defines operations on such sets, needed by the solvers
+//! (append, remove, mex, ...). Sets can be represented by primitive integers
+//! (`u32`, `u64`, `u128`) or by a 4-element array of `u64` (that can store any nimber).
+//! Each set also has an *extended* representation (see [`ExtendendNimberSet`]),
+//! used for efficient removal of the largest element.
+
 use bitm::n_lowest_bits;
 use crate::bit::ExtraBitMethods;
 
@@ -6,13 +14,19 @@ pub trait WithLowest {
     fn with_lowest(n: u16) -> Self;
 }
 
+/// A set of nimbers (Grundy numbers).
+///
+/// It is used by the solvers to collect the nimbers of the successors of a position,
+/// and then to calculate the [mex](https://en.wikipedia.org/wiki/Mex_(mathematics)) of the set.
 pub trait NimberSet: Sized + WithLowest {
 
+    /// Extended representation of the set (see [`ExtendendNimberSet`]).
     type Extended: ExtendendNimberSet<Self>;
 
     /// Construct empty set of nimbers.
     fn empty() -> Self;
 
+    /// Construct the set with only one element: `only_element`.
     fn singleton(only_element: u8) -> Self {
         let mut result = Self::empty();
         result.append(only_element);
@@ -70,6 +84,9 @@ pub trait ExtendendNimberSet<NimberSet>: WithLowest {
     fn is_distinct_from(&self, other: &NimberSet) -> bool;
 }
 
+/// Implements [`NimberSet`] for a primitive integer type, and the corresponding
+/// [`ExtendendNimberSet`] for the extended type that can handle sets with
+/// elements exceeding the size of the primitive type.
 macro_rules! impl_nimber_sets_for_primitive {
     ($ext_type:ident extends $type:ty) => {
         impl WithLowest for $type {
@@ -103,11 +120,13 @@ macro_rules! impl_nimber_sets_for_primitive {
             }
         }
 
+        /// Extended set of nimbers: the lowest ones are stored in `details`,
+        /// the number of the rest (higher) ones is stored in `bigger_count`.
         pub struct $ext_type {
-            /// subset of the lowest nimbers
+            /// Subset of the lowest nimbers.
             details: $type,
 
-            /// number of nimbers larger than 8*sizeof(details)
+            /// Number of nimbers larger than 8*sizeof(details).
             bigger_count: u16
         }
 
@@ -192,6 +211,8 @@ impl_nimber_sets_for_primitive!(ExtendU32NimberSet extends u32);
 impl_nimber_sets_for_primitive!(ExtendU64NimberSet extends u64);
 impl_nimber_sets_for_primitive!(ExtendU128NimberSet extends u128);
 
+/// Nimber set represented by a 4-element array of `u64` (i.e. a 256-bit bitset);
+/// it can include any nimber and it is its own extended representation.
 impl NimberSet for [u64; 4] {
 
     type Extended = [u64; 4];

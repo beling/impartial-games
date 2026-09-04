@@ -1,3 +1,6 @@
+//! Utilities for bit operations (masks, bit isolation, bit-sequence repetition)
+//! used by the library's bitboards and sets.
+
 pub trait ExtraBitMethods {
     /// Returns 0..01..1 mask with `n` ones, i.e. the largest `n`-bit number.
     fn with_lowest_bits(n: u8) -> Self;
@@ -24,6 +27,7 @@ pub trait ExtraBitMethods {
     fn clear_leading_one(&mut self);
 }
 
+/// Implements [`ExtraBitMethods`] for an integer type, given only the (type-dependent) [`ExtraBitMethods::upto_leading_one`].
 macro_rules! impl_some_extra_bits_methods {
     () => {
         #[inline(always)] fn with_lowest_bits(n: u8) -> Self {
@@ -103,6 +107,9 @@ impl ExtraBitMethods for u128 {
 #[inline(always)]
 pub const fn lowest_bit_of(x: u64) -> u64 { x & x.wrapping_neg() }
 
+/// Returns the 64-bit word consisting of `how_many_times` copies of
+/// the lowest `sequence_width` bits of `sequence` (each next copy shifted by `sequence_width` bits).
+#[inline]
 pub const fn repeat_bit_sequence(mut sequence: u64, sequence_width: u8, mut how_many_times: u8) -> u64 {
     // TODO lepszy algorytm jak potęgowanie
     while how_many_times > 1 {
