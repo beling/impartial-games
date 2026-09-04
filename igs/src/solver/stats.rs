@@ -1,3 +1,5 @@
+//! Search statistics collectors and search progress reporters.
+
 use std::ops::Deref;
 use std::fmt;
 use std::fmt::Formatter;
@@ -5,13 +7,14 @@ use std::fmt::Formatter;
 /// Receives reports on search progress.
 pub trait ProgressReporter {
     /// Called before search next position or its component.
+    /// (`max` is the maximal number of nimbers/moves that will be reported.)
     #[inline(always)] fn begin(&mut self, _max: u16) {}
 
     /// Called after search the position or its component.
     #[inline(always)] fn end(&mut self) {}
 
     /// Called before just before start analyzing next top-level nimber or move.
-    /// (`current` is a number of move to be analyzed, and `max` is maximal number of nimber/moves).
+    /// (`current` is a number of move to be analyzed, and `max` is maximal number of nimber/moves.)
     fn progress(&mut self, current: u16);
 }
 
@@ -93,6 +96,8 @@ pub trait StatsCollector {
     #[inline(always)] fn reset(&mut self) {}
 }
 
+/// The phase of the search of a single position, i.e. where the search currently is.
+///
 /// It is used by stats collectors to follow the phase (pre, ETC, recursive) of the search.
 #[derive(Copy, Clone)]
 pub enum SearchPhase { Pre = 0, ETC = 1, Recursive = 2 }
@@ -113,9 +118,28 @@ impl Default for SearchPhase {
 }
 
 /// Event generated during search.
+///
+/// Each variant corresponds to an event reported by a [`StatsCollector`] method:
+/// `Exact` - exact, `Unknown` - unknown, `TTCut`/`ConstDbCut` - db_cut,
+/// `TTSkip`/`ConstDbSkip` - db_skip, `TTRead`/`ConstDbRead` - tt_read/const_db_read.
 #[derive(Copy, Clone)]
 pub enum EventType {
-    Exact = 0, Unknown = 1, TTCut = 2, ConstDbCut = 3, TTSkip = 4, ConstDbSkip = 5, TTRead = 6, ConstDbRead = 7
+    /// The nimber of the position was calculated exactly (and stored in TT).
+    Exact = 0,
+    /// The position was searched, but its nimber was not established (due to pruning).
+    Unknown = 1,
+    /// The search was cut by the nimber known from the transposition table.
+    TTCut = 2,
+    /// The search was cut by the nimber known from the const database.
+    ConstDbCut = 3,
+    /// The position (usually during ETC) was skipped by the nimber known from the transposition table.
+    TTSkip = 4,
+    /// The position (usually during ETC) was skipped by the nimber known from the const database.
+    ConstDbSkip = 5,
+    /// Reading from the transposition table.
+    TTRead = 6,
+    /// Reading from the const database.
+    ConstDbRead = 7
 }
 
 impl EventType {
@@ -291,6 +315,8 @@ impl<'a> std::iter::Sum<&'a EventCounters> for EventCounters {
 }
 
 #[derive(Default)]
+/// [`StatsCollector`] that counts search events, separately for various types and search phases
+/// (see the example output of `Display` below).
 pub struct EventStats {
     events: EventCounters,
     phase: SearchPhase,
@@ -359,6 +385,8 @@ impl StatsCollector for EventStats {
 }
 
 #[derive(Default)]
+/// [`StatsCollector`] that counts search events, separately for various types, search phases
+/// and search tree levels (depths).
 pub struct EventStatsAtLevels {
     events: Vec<EventCounters>,
     phase: SearchPhase,
@@ -459,19 +487,23 @@ macro_rules! ncf { () => ("{:>6} {:>10} {:>10} {:>10}") }
 //macro_rules! ncf_r { () => (concat!(" " ncf_l!())) }
 
 #[derive(Default)]
-struct NimberOccurrences {
-    calculated: u64,
-    tt: u64,
-    const_db: u64
-}
-
-#[derive(Default)]
+/// Statistics about occurrences of nimbers: it counts how many times each nimber
+/// was calculated by the search or taken from the transposition table / const database.
 pub struct NimberStats {
     number_of_nimber: Vec<NimberOccurrences>,
     read_was_from_tt: bool
 }
 
-/// Calculates statistics for nimbers.
+#[derive(Default)]
+/// Counters of occurrences of a single nimber.
+struct NimberOccurrences {
+    /// number of times the nimber was calculated by the search
+    calculated: u64,
+    /// number of times the nimber was taken from the transposition table
+    tt: u64,
+    /// number of times the nimber was taken from the const database
+    const_db: u64
+}
 impl NimberStats {
     fn register_nimber_from_db(&mut self, nimber: u8) {
         let c = enlarge_to_index(&mut self.number_of_nimber, nimber as usize);

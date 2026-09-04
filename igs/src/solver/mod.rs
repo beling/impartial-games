@@ -1,23 +1,35 @@
+//! Generic game solver with pluggable nimber-calculation methods (see `def`, `lv`, `lvb` and `br` submodules),
+//! transposition table, end database, move sorter and statistics collector.
+//!
+//! The [`Solver`] struct is the generic solver; `dedicated` submodule defines the `SolverForSimpleGame`
+//! and `SolverForDecomposableGame` traits, and dedicated solvers (`DefSolver`, `BRSolver`, `BRAspSetSolver`, `LVBSolver`)
+//! that wrap `Solver` with a specific nimber-calculation method.
+
 use crate::game::{Game, SimpleGame, DecomposableGame};
 use crate::dbs::{NimbersProvider, NimbersStorer};
 use crate::moves::{ComponentsInfo, SimpleGameMoveSorter, DecomposableGameMoveSorter};
 use crate::nimber_set::NimberSet;
 
+/// Solver that calculates nimbers by their definition (mex of nimbers of successors).
 pub mod def;
 pub use self::def::DefSimpleGameSolver as _;
 pub use self::def::DefDecomposableGameSolver as _;
 
+/// Solver that calculates nimbers using the improved (by Beling) version of Lemoine-Viennot's method.
 pub mod lvb;
 pub use self::lvb::LVBSimpleGameSolver as _;
 pub use self::lvb::LVBDecomposableGameSolver as _;
 
+/// Solver that calculates nimbers using Beling's method (described by Beling and Rogalski).
 pub mod br;
 pub use self::br::BRSimpleGameSolver as _;
 pub use self::br::BRDecomposableGameSolver as _;
 
+/// Dedicated solvers (implemented as wrappers of [`Solver`] with fixed calculation method).
 pub mod dedicated;
 pub use self::dedicated::{SolverForSimpleGame, SolverForDecomposableGame};
 
+/// Search statistics and progress reporters.
 pub mod stats;
 pub use stats::StatsCollector;
 use std::collections::HashMap;
@@ -27,12 +39,16 @@ mod outcome;
 /// Solver that calculate nimbers of games.
 ///
 /// It implements many methods:
-/// - by definition,
-/// - LV method (improved by Beling),
-/// - Beling's method (described by Beling and Rogalski)
+/// - by definition (see `DefSimpleGameSolver`/`DefDecomposableGameSolver`),
+/// - LV method (improved by Beling, see `LVBSimpleGameSolver`/`LVBDecomposableGameSolver`),
+/// - Beling's method (described by Beling and Rogalski, see `BRSimpleGameSolver`/`BRDecomposableGameSolver`).
 ///
 /// Empty type "()" can be given as transposition_table or const_db to calculate without these nimber bases.
 /// Also a tuple of databases (const_db1, const_db2, ...) can be given as const_db to use multiple const databases.
+///
+/// The recommended way to solve a game is to construct the solver by `game.solver()` or
+/// `game.solver_with_stats(stats)`, and then to call one of the calculation methods
+/// (e.g. `nimber_of_initial_lvb`) on it.
 pub struct Solver<'g, G, TT = HashMap::<<G as Game>::Position, u8>, EDB = (), SORTER = (), STATS = ()>
     where G: Game,
           TT: NimbersProvider<G::Position> + NimbersStorer<G::Position>,
@@ -75,11 +91,15 @@ impl<'a, G, TT, EDB, SORTER, STATS> Solver<'a, G, TT, EDB, SORTER, STATS>
         self.const_db.get_nimber_and_self_organize(p)
     }
 
+    /// Returns the nimber of `p` if it is known by `const_db` or `transposition_table`
+    /// (consulted in that order); reports all the reads to `self.stats`.
     #[inline(always)]
     fn nimber_from_any_db(&mut self, p: &G::Position) -> Option<u8> {
         self.nimber_from_const_db(&p).or_else(|| self.nimber_from_tt(&p))
     }
 
+    /// Constructs the solver for the `game` with the given transposition table,
+    /// const (end game) database, move sorter and statistics collector.
     pub fn new(game: &'a G, transposition_table: TT, const_db: EDB, move_sorter: SORTER, stats: STATS) -> Self {
         Self { game, transposition_table, const_db, move_sorter, stats /*, allocator: Bump::with_capacity(16*1_024*1_024) Bump::new()*/ }
     }
@@ -92,6 +112,11 @@ impl<G, TT, EDB, SORTER, STATS> Solver<'_, G, TT, EDB, SORTER, STATS>
           SORTER: SimpleGameMoveSorter<G>,
           STATS: StatsCollector
 {
+    /// ETC (enhanced transposition cutoff) for a simple game.
+    ///
+    /// Returns: the number of moves in `position`, the set of nimbers of the successors that are
+    /// already known from databases (so the nimber of `position` cannot be any of them),
+    /// and the remaining (not known from databases) successors, sorted by `move_sorter`.
     #[inline(always)]
     fn etc_simple(&mut self, position: &<G as Game>::Position) -> (u16, G::NimberSet, Vec<<G as Game>::Position>) {
         self.stats.etc();
@@ -118,6 +143,12 @@ impl<G, TT, EDB, SORTER, STATS, DP> Solver<'_, G, TT, EDB, SORTER, STATS>
           SORTER: DecomposableGameMoveSorter<G>,
           STATS: StatsCollector
 {
+    /// ETC (enhanced transposition cutoff) for a decomposable game.
+    ///
+    /// Returns: the number of moves in `position`, the set of nimbers of the (decomposed) successors
+    /// all of whose components are already known from databases (so the nimber of `position`
+    /// cannot be any of those nimbers), the vector of all not-yet-known components of the successors,
+    /// and infos about the successors (each pointing to its components in that vector).
     #[inline(always)]
     fn etc_decomposable(&mut self, position: &&<G as Game>::Position) -> (u16, G::NimberSet, Vec<<G as Game>::Position>, Vec<ComponentsInfo>) {
         self.stats.etc();

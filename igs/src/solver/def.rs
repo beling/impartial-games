@@ -7,7 +7,10 @@ use crate::solver::StatsCollector;
 /// Solver that calculate nimbers using the mex function directly
 /// and (if G is DecomposableGame) Sprague–Grundy theorem for decomposable positions.
 pub trait DefSimpleGameSolver<G> where G: SimpleGame {
+    /// Calculates nimber of the given `position` (and, for efficiency, stores it in the transposition table).
     fn nimber_def(&mut self, position: G::Position) -> u8;
+
+    /// Calculates nimber of the initial position of the game.
     fn nimber_of_initial_def(&mut self) -> u8;
 }
 
@@ -15,8 +18,11 @@ pub trait DefSimpleGameSolver<G> where G: SimpleGame {
 /// and (if G is DecomposableGame) Sprague–Grundy theorem for decomposable positions.
 pub trait DefDecomposableGameSolver<G> where G: DecomposableGame {
 
+    /// Calculates nimber of the given `position` (and, for efficiency, stores it in the transposition table).
     fn nimber_of_component_def(&mut self, position: G::Position) -> u8;
 
+    /// Calculates nimber of the (possibly decomposable) `position`
+    /// (as the xor of nimbers of all its components).
     fn nimber_def(&mut self, position: <G as DecomposableGame>::DecomposablePosition) -> u8; /*{
         let mut result = 0u8;
         for component in self.game.decompose(&position) {
@@ -25,6 +31,7 @@ pub trait DefDecomposableGameSolver<G> where G: DecomposableGame {
         result
     }*/
 
+    /// Calculates nimber of the initial position of the game.
     fn nimber_of_initial_def(&mut self) -> u8;
 }
 impl<G, TT, EDB, SORTER, STATS> DefSimpleGameSolver<G> for Solver<'_, G, TT, EDB, SORTER, STATS>

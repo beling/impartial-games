@@ -148,7 +148,8 @@ impl<G, TT, EDB, SORTER, STATS, DP> Solver<'_, G, TT, EDB, SORTER, STATS>
         self.has_nimber(&move_components[m.first], nim ^ m.nimber)
     }
 
-    /// caller must call self.stats.pre(); before
+    /// Calculates nimber of the (non-decomposable) `position` (component).
+    /// Caller must call self.stats.pre() before (and optionally check const_db).
     fn nimber_of_component_inner<PR: ProgressReporter>(&mut self, position: &G::Position, mut progress_reporter: PR) -> u8 {
         //if let Some(v) = self.nimber_from_const_db(&position) { return v; }  // checked by caller (ETC)
         if let Some(v) = self.nimber_from_tt(&position) {
