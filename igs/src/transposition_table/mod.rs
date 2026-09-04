@@ -1,3 +1,14 @@
+//! Transposition tables - hash maps that cache the nimbers of already searched game positions
+//! (implementations of the [`NimbersProvider`] and [`NimbersStorer`] traits).
+//!
+//! Two kinds of tables are provided:
+//! - [`ProtectedTT`] - a table that protects the nimbers of some (e.g. close to a search tree root)
+//!   positions from being overwritten and periodically backs them up in a file;
+//! - [`TTSuccinct64`] - a very compact table for 64-bit positions, which uses clusters
+//!   of 32-bit entries and is parametrized by a bit-mixing function (see [`bit_mixer`])
+//!   and a cluster policy (see [`cluster_policy`]).
+
+
 use core::ptr;
 
 pub use protected::ProtectedTT;
@@ -9,20 +20,27 @@ pub mod bit_mixer;
 
 mod protected;
 
+/// The entry that denotes an empty (unoccupied) cluster slot.
 const EMPTY_ENTRY: u32 = u32::MAX;
 
 /// Clusters configuration.
 pub struct ClusterConf {
+    /// Mask of the key fragment (position id) stored in each entry.
     pub id_mask: u32,
+    /// The number of key bits (position id bits) stored in each entry.
     pub id_size: u8,
+    /// The number of entries in each cluster (a power of 2).
     pub capacity: u8,
+    /// The maximal nimber that can be stored in an entry.
     pub max_nimber: u8,
 }
 
 impl ClusterConf {
 
+    /// Constructs the configuration for clusters of `2` to power of `cluster_capacity_log2` entries,
+    /// each entry storing a nimber on `bits_per_nimber` bits and `32-bits_per_nimber` bits of the key.
     pub fn new_log2(cluster_capacity_log2: u8, bits_per_nimber: u8) -> Self {
-        let in_cluster_key_size = 32 - bits_per_nimber; // liczba bitów klucza przechowywanych we wpisach
+        let in_cluster_key_size = 32 - bits_per_nimber; // the number of key bits stored in entries
         Self {
             id_mask: (1u32 << in_cluster_key_size).wrapping_sub(1),
             id_size: in_cluster_key_size,
@@ -87,13 +105,19 @@ pub trait ClusterPolicy {
 }
 
 pub mod cluster_policy {
+    //! Implementations of the [`ClusterPolicy`] trait - the policies of updating
+    //! and looking up transposition table clusters.
     use core::ptr;
 
     use super::{ClusterConf, ClusterPolicy, EMPTY_ENTRY};
 
+    /// First-in-first-out policy: newly stored entries shift the stored ones up,
+    /// so the entries stored first are discarded first.
     pub struct Fifo;
     impl ClusterPolicy for Fifo {}
 
+    /// Policy that on insertion behaves like [`Fifo`], and on successful lookup
+    /// swaps the found entry with its predecessor (a light-weight self-organization).
     pub struct FifoLru;
     impl ClusterPolicy for FifoLru {
         #[inline(always)]
@@ -113,6 +137,8 @@ pub mod cluster_policy {
         }
     }
 
+    /// Least-recently-used policy: on successful lookup, the found entry is moved
+    /// to the beginning of the cluster.
     pub struct Lru;
     impl ClusterPolicy for Lru {
         #[inline(always)]
@@ -133,6 +159,8 @@ pub mod cluster_policy {
         }
     }
 
+    /// Policy that keeps in the cluster the entries with the lowest nimbers
+    /// (entries with larger nimbers are discarded first).
     pub struct LowestNimbers;
 
     impl ClusterPolicy for LowestNimbers {
@@ -141,6 +169,8 @@ pub mod cluster_policy {
         }
     }
 
+    /// Policy that keeps in the cluster the entries with the largest nimbers
+    /// (entries with lower nimbers are discarded first).
     pub struct LargestNimbers;
 
     impl ClusterPolicy for LargestNimbers {
@@ -171,6 +201,7 @@ pub mod cluster_policy {
         }
     }
 
+    /// Policy that replaces entries in a pseudo-random order, each with equal probability.
     #[derive(Default, Copy, Clone)]
     pub struct BalancedRandom { index: u32 }
 
@@ -196,13 +227,14 @@ pub mod cluster_policy {
 
 /// Succinct transposition table for 64-bit positions.
 ///
-/// It uses only 32-bit to encode position and nimber, but has some limitations.
-/// It stores only information about the position whose nimber is less than or equal to `max_nimber`.
-/// Position are identified by a fragment stored in the entry and the index of the entry - strictly speaking
-/// index of the cluster assigned to the position. So, when the cluster is full,
+/// It uses only 32 bits to encode a position and its nimber, but has some limitations.
+/// It stores only information about the positions whose nimbers are less than or equal to `max_nimber`.
+/// Positions are identified by a fragment stored in the entry and the index of the entry - strictly speaking
+/// the index of the cluster assigned to the position. So, when the cluster is full,
 /// more positions assigned to the cluster cannot be stored, even if the whole table is not full
-/// (then LIFO strategy is used).
+/// (then the cluster policy decides which entry to discard).
 pub struct TTSuccinct64<BitMixer: Fn(u64, u64) -> u64, Policy: ClusterPolicy = cluster_policy::Fifo> {
+    /// The table data: consecutive clusters of entries.
     data: Box<[u32]>,
     /// Clusters configuration.
     cluster_conf: ClusterConf,
@@ -224,8 +256,8 @@ impl<BitMixer: Fn(u64, u64) -> u64, Policy: ClusterPolicy> TTSuccinct64<BitMixer
         assert!(capacity_log2 >= cluster_capacity_log2);
         assert!(bits_per_nimber <= 8);
         let cluster_conf = ClusterConf::new_log2(cluster_capacity_log2, bits_per_nimber);
-        let clusters_num_log2 = capacity_log2 - cluster_capacity_log2;  // log2 z liczby klastrów
-        let bits_per_key = clusters_num_log2 + cluster_conf.id_size;    // całkowita liczba bitów użyta z klucza
+        let clusters_num_log2 = capacity_log2 - cluster_capacity_log2;  // log2 of the number of clusters
+        let bits_per_key = clusters_num_log2 + cluster_conf.id_size;    // the total number of bits used from the key
         assert!(bits_per_key <= 64);
         Self {
             data: vec![EMPTY_ENTRY; 1usize<< capacity_log2].into_boxed_slice(),
@@ -250,6 +282,7 @@ impl<BitMixer: Fn(u64, u64) -> u64, Policy: ClusterPolicy> TTSuccinct64<BitMixer
         &self.data[cl_beg..cl_beg+(self.cluster_conf.capacity as usize)]
     }
 
+    /// Returns the id of the `position` (the fragment of its mixed key) and the cluster assigned to it.
     fn pos_id_and_cluster(&self, position: u64) -> (u32, &[u32]) {
         let key = (self.mix_bits)(position, self.key_mask);
         (self.cluster_conf.id(key as u32), &self.cluster(key))

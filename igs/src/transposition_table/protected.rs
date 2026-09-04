@@ -15,6 +15,7 @@ use std::io::{Read, Seek, SeekFrom, BufWriter, Write};
 /// Nimbers of the rest positions are stored in `unprotected_part`.
 /// The predicate `should_be_protected` points which positions are protected.
 pub struct ProtectedTT<'g, G: Game, UnprotectedTT, ProtectPred: Fn(&G, &G::Position) -> bool, F> {
+    /// The game which positions are stored.
     game: &'g G,
     /// Stores nimbers of unprotected positions.
     unprotected_part: UnprotectedTT,
@@ -32,6 +33,13 @@ where G: Game + SerializableGame,
       UnprotectedTT: NimbersStorer<G::Position>,
       ProtectPred: Fn(&G, &G::Position) -> bool
 {
+    /// Constructs the transposition table.
+    ///
+    /// If the file `backup_file_name` already exists, it is restored as the backup
+    /// of the protected part: the positions (and their nimbers) stored there are loaded
+    /// (the ones that should not be protected now are moved to `unprotected_part`).
+    /// `positions_per_flush` is the (approximate) number of protected positions
+    /// buffered before they are flushed to the backup file.
     pub fn new<P: AsRef<Path>>(game: &'g G, backup_file_name: P, should_be_protected: ProtectPred, mut unprotected_part: UnprotectedTT, positions_per_flush: usize) -> Self {
         let mut protected_part = HashMap::<G::Position, u8>::new();
         let mut backup_position = 0;

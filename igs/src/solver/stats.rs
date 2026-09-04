@@ -50,9 +50,9 @@ impl ProgressReporter for PrintProgress {
 /// Searching of a single position can finish in any phase and is indicated by calling one of:
 /// `exact`, `unknown`, or `db_cut`.
 ///
-/// Reading from databases are indicated by calling `TT_read` and `const_db_read`
+/// Reads from databases are indicated by calling `tt_read` and `const_db_read`
 /// (which is usually done in pre or ETC phase).
-/// Just after `TT_read` or `const_db_read`, `db_cut` or `db_skip` can be called.
+/// Just after `tt_read` or `const_db_read`, `db_cut` or `db_skip` can be called.
 ///
 /// Statistics are collected up to the time of calling `reset`.
 /// To enable collecting and averaging statistics from many searches (for many initial positions),
@@ -100,7 +100,14 @@ pub trait StatsCollector {
 ///
 /// It is used by stats collectors to follow the phase (pre, ETC, recursive) of the search.
 #[derive(Copy, Clone)]
-pub enum SearchPhase { Pre = 0, ETC = 1, Recursive = 2 }
+pub enum SearchPhase {
+    /// The phase at the beginning of the search of a position (before the ETC phase).
+    Pre = 0,
+    /// The ETC (enhanced transposition cutoff) phase.
+    ETC = 1,
+    /// The phase after ETC, i.e. the loop over moves with recursive calls of the search algorithm.
+    Recursive = 2
+}
 
 impl SearchPhase {
     /// Should be called in pre.
@@ -234,10 +241,12 @@ impl EventCounters {
         *self = Default::default();
     }
 
+    /// Writes a single row of the statistics report (a title and the counts in all search phases).
     fn print_row<T: fmt::Display>(f: &mut fmt::Formatter<'_>, title: T, pre: u64, etc: u64, recursive: u64) -> fmt::Result {
         writeln!(f, fs!(), title, pre, etc, recursive, pre+etc+recursive)
     }
 
+    /// Writes the statistics of the given event type in all search phases.
     fn print_event_stats(&self, f: &mut fmt::Formatter<'_>, event: EventType) -> fmt::Result {
         Self::print_row(f, event,
                         self.number_of_events(SearchPhase::Pre, event),
@@ -245,6 +254,7 @@ impl EventCounters {
                         self.number_of_events(SearchPhase::Recursive, event))
     }
 
+    /// Writes the summary row of the statistics report (the total counts in all search phases).
     fn print_summarize<T: fmt::Display>(f: &mut fmt::Formatter<'_>, title: T, pre: u64, etc: u64, recursive: u64) -> fmt::Result {
         writeln!(f, fs_title!(), title, pre, etc, recursive, pre+etc+recursive)
     }
@@ -318,8 +328,11 @@ impl<'a> std::iter::Sum<&'a EventCounters> for EventCounters {
 /// [`StatsCollector`] that counts search events, separately for various types and search phases
 /// (see the example output of `Display` below).
 pub struct EventStats {
+    /// Counters of the search events.
     events: EventCounters,
+    /// The phase of the search currently performed.
     phase: SearchPhase,
+    /// Whether the most recent database read was from the transposition table (or from the const db otherwise).
     read_was_from_tt: bool
 }
 
@@ -388,9 +401,13 @@ impl StatsCollector for EventStats {
 /// [`StatsCollector`] that counts search events, separately for various types, search phases
 /// and search tree levels (depths).
 pub struct EventStatsAtLevels {
+    /// Counters of the search events, one for each search tree level.
     events: Vec<EventCounters>,
+    /// The phase of the search currently performed.
     phase: SearchPhase,
-    level: usize,   // 0 before/after search, 1 for root, etc.
+    /// The level (depth) of the search tree; 0 before/after search, 1 for root, etc.
+    level: usize,
+    /// Whether the most recent database read was from the transposition table (or from the const db otherwise).
     read_was_from_tt: bool
 }
 
@@ -408,10 +425,13 @@ impl EventStatsAtLevels {
         self.events.iter().sum()
     }
 
+    /// Registers the event in the counters of the current search tree level.
     fn register_event(&mut self, event: EventType) {
         enlarge_to_index(&mut self.events, self.level-1).register_event(self.phase, event);
     }
 
+    /// Registers the event in the counters of the current search tree level
+    /// and finishes the search of the current position (returns to the upper level).
     fn register_return_event(&mut self, event: EventType) {
         self.register_event(event);
         self.phase.end();
@@ -490,7 +510,9 @@ macro_rules! ncf { () => ("{:>6} {:>10} {:>10} {:>10}") }
 /// Statistics about occurrences of nimbers: it counts how many times each nimber
 /// was calculated by the search or taken from the transposition table / const database.
 pub struct NimberStats {
+    /// Counters for nimbers 0, 1, 2, ... (the vector is enlarged as needed).
     number_of_nimber: Vec<NimberOccurrences>,
+    /// Whether the most recent database read was from the transposition table (or from the const db otherwise).
     read_was_from_tt: bool
 }
 
@@ -505,15 +527,19 @@ struct NimberOccurrences {
     const_db: u64
 }
 impl NimberStats {
+    /// Registers that the given `nimber` was taken from the transposition table or the const database
+    /// (which one is indicated by `read_was_from_tt`).
     fn register_nimber_from_db(&mut self, nimber: u8) {
         let c = enlarge_to_index(&mut self.number_of_nimber, nimber as usize);
         if self.read_was_from_tt { c.tt += 1; } else { c.const_db += 1; }
     }
 
+    /// Writes the header row of the statistics report.
     fn write_header(f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, ncf!(), "nimber", "calculated", "from: TT", "const db")
     }
 
+    /// Writes the statistics row of the given `nimber`.
     fn write_nimber(&self, f: &mut Formatter<'_>, nimber: u8) -> fmt::Result {
         write!(f, ncf!(), nimber,
                self.number_of_nimber[nimber as usize].calculated,

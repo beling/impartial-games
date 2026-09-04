@@ -79,12 +79,14 @@ impl<'a, G, TT, EDB, SORTER, STATS> Solver<'a, G, TT, EDB, SORTER, STATS>
           EDB: NimbersProvider<G::Position>,
           STATS: StatsCollector
 {
+    /// Returns the nimber of `p` if it is stored in `transposition_table`; reports the read to `self.stats`.
     #[inline(always)]
     fn nimber_from_tt(&mut self, p: &G::Position) -> Option<u8> {
         self.stats.tt_read();
         self.transposition_table.get_nimber_and_self_organize(p)
     }
 
+    /// Returns the nimber of `p` if it is stored in `const_db`; reports the read to `self.stats`.
     #[inline(always)]
     fn nimber_from_const_db(&mut self, p: &G::Position) -> Option<u8> {
         self.stats.const_db_read();

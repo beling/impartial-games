@@ -1,3 +1,8 @@
+//! Bit-mixing (hashing) functions that map 64-bit positions to 64-bit (masked) keys.
+//!
+//! All the functions map distinct inputs (up to the mask) to distinct outputs with high probability,
+//! which is needed by succinct transposition tables to reduce the number of collisions.
+
 /// Slightly generalized (masked) version of the bit-mixing function found by <cite>[David Stafford][1]</cite>
 /// (and used for example in <cite>[SplitMix][2]</cite>).
 ///
