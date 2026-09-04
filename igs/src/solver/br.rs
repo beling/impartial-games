@@ -2,7 +2,7 @@ pub use super::Solver;
 use crate::game::{Game, SimpleGame, DecomposableGame};
 use crate::moves::{SimpleGameMoveSorter, DecomposableGameMoveSorter, ComponentsInfo};
 use crate::dbs::{NimbersProvider, NimbersStorer};
-use crate::nimber_set::{NimberSet, ExtendendNimberSet, WithLowest};
+use crate::nimber_set::{NimberSet, ExtendedNimberSet, WithLowest};
 use crate::stats::{StatsCollector, ProgressReporter};
 //use smallvec::{SmallVec};
 
@@ -17,6 +17,7 @@ pub trait BRSimpleGameSolver<G> where G: SimpleGame {
     /// Calculates nimber of `position` using the method developed by Beling.
     fn nimber_br(&mut self, position: G::Position) -> u8;
 
+    /// Calculates nimber of the initial position of the game using the method developed by Beling.
     fn nimber_of_initial_br(&mut self) -> u8;
 
     /// Calculates nimber of `position` using aspiration sets method developed by Beling.
@@ -28,9 +29,12 @@ pub trait BRSimpleGameSolver<G> where G: SimpleGame {
         self.nimber_br_aspset_report_progress(position, None, ())
     }
 
+    /// Calculates nimber of the initial position of the game using aspiration sets method developed by Beling.
+    /// Reports search progress (nimber about to analyze) to `progress_reporter`.
     fn nimber_of_initial_br_aspset_report_progress<PR: ProgressReporter>(&mut self, progress_reporter: PR) -> u8;
 
-    fn nimber_of_initial_br_aspset(&mut self) -> u8 { 
+    /// Calculates nimber of the initial position of the game using aspiration sets method developed by Beling.
+    fn nimber_of_initial_br_aspset(&mut self) -> u8 {
         self.nimber_of_initial_br_aspset_report_progress(())
     }
 }

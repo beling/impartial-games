@@ -1,3 +1,5 @@
+//! Implementations of [`EndDbSlicesProvider`] for Cram,
+//! which define the content of the slices of a Cram endgame database.
 use crate::enddb::{EndDbSlicesProvider, SortedPositionNimberMap};
 use std::iter::FusedIterator;
 use bitm::n_lowest_bits;
@@ -5,13 +7,18 @@ use super::Cram;
 use crate::dbs::NimbersProvider;
 use crate::game::Game;
 
+/// Iterator over the (normalized) Cram positions of a single slice of an endgame database.
 pub struct SliceIterator<'a> {
     cram: &'a Cram,
+    /// The position to be examined next.
     current_position: u64,
+    /// The first position beyond the slice.
     end: u64
 }
 
 impl SliceIterator<'_> {
+    /// Constructs the iterator over the positions of the slice with the given `slice_index`
+    /// (positions are examined up to `max_end`, exclusively).
     pub fn new(cram: &Cram, slice_index: usize, max_end: u64) -> SliceIterator {
         let slice_index = slice_index as u64;
         SliceIterator { cram, current_position: slice_index << 32, end: max_end.min((slice_index+1)<<32) }
@@ -86,16 +93,25 @@ impl EndDbSlicesProvider for LimitedSliceProvider {
     }
 }
 
+/// Iterator over the Cram positions of a single slice of an endgame database
+/// that stores positions with all empty fields in
+/// `number_of_columns_in_end_db` first columns.
+/// Positions are compressed by representing each row with
+/// `number_of_columns_in_end_db` bits.
 pub struct LimitedColumnsSliceIterator<'a> {
     cram: &'a Cram,
+    /// The (compressed) position to be examined next.
     current_position_compressed: u64,
+    /// The first (compressed) position beyond the slice.
     end_position_compressed: u64,
+    /// 11..10..0 mask with `number_of_columns_in_end_db` ones.
     compressed_row_mask: u64,
+    /// The number of columns that are represented.
     number_of_columns_in_end_db: u8
 }
 
 /// Returns a modified copy of `src` that has changed number of columns from `src_nr_of_cols` to `dst_nr_of_cols`.
-/// `src_row_mask` shows fields to read from each row of `src` and usually is equal to `(1<<src_nr_of_cols)-1`
+/// `src_row_mask` shows fields to read from each row of `src` and usually is equal to `(1<<src_nr_of_cols)-1`.
 #[inline]
 fn change_number_of_columns(src: u64, src_row_mask: u64, src_nr_of_cols: u8, dst_nr_of_cols: u8) -> u64 {
     let mut result = src & src_row_mask;
@@ -110,6 +126,8 @@ fn change_number_of_columns(src: u64, src_row_mask: u64, src_nr_of_cols: u8, dst
 }
 
 impl LimitedColumnsSliceIterator<'_> {
+    /// Constructs the iterator over the positions of the slice with the given `slice_index`
+    /// (compressed positions are examined up to `max_end`, exclusively).
     pub fn new(cram: &Cram, slice_index: usize, max_end: u64, number_of_columns_in_end_db: u8) -> LimitedColumnsSliceIterator {
         let slice_index = slice_index as u64;
         LimitedColumnsSliceIterator { cram,
@@ -120,6 +138,7 @@ impl LimitedColumnsSliceIterator<'_> {
         }
     }
 
+    /// Returns the current (uncompressed) position.
     #[inline(always)]
     pub fn current_position(&self) -> u64 {
         change_number_of_columns(
@@ -146,17 +165,27 @@ impl Iterator for LimitedColumnsSliceIterator<'_> {
 
 impl FusedIterator for LimitedColumnsSliceIterator<'_> {}
 
-// Slice Provider for Cram that expose only position whose all empty cells are included in the given number of first columns.
+/// Slice provider for Cram that exposes only the positions whose all empty cells
+/// are included in the given (reduced) number of columns; positions are compressed
+/// by changing the number of columns to `number_of_columns_in_end_db`.
 pub struct LimitedColumnsSliceProvider {
     //content_mask: u64,
+    /// The first uncompressed position that is not exposed (it grows as the slices are built).
     end_position: u64,
+    /// Bits outside the (maximal) rectangle of the exposed positions (in uncompressed representation).
     outside_max_rectangle: u64,
+    /// Mask of the first row of the (uncompressed) board.
     cram_first_row_mask: u64,
+    /// The number of columns that are represented in compressed positions.
     number_of_columns_in_end_db: u8,
+    /// The number of columns of the uncompressed board.
     cram_number_of_columns: u8
 }
 
 impl LimitedColumnsSliceProvider {
+    /// Constructs the provider that exposes only the positions whose all empty cells
+    /// are included in `number_of_columns_in_end_db` columns
+    /// (and unlimited number of rows).
     pub fn new(cram: &Cram, number_of_columns_in_end_db: u8) -> Self {
         Self {
             end_position: 0,
@@ -167,6 +196,9 @@ impl LimitedColumnsSliceProvider {
         }
     }
 
+    /// Constructs the provider that exposes only the positions whose all empty cells
+    /// are included in `number_of_columns_in_end_db` columns and `number_of_full_rows` rows,
+    /// plus an extra (last) row of `number_of_columns_in_last_row` columns.
     pub fn with_limited_rows(cram: &Cram, number_of_columns_in_end_db: u8, number_of_full_rows: u8, number_of_columns_in_last_row: u8) -> Self {
         let cells = cram.rectangle(number_of_columns_in_end_db, number_of_full_rows) |
             (n_lowest_bits(number_of_columns_in_last_row) << (cram.number_of_cols * number_of_full_rows));
@@ -192,6 +224,7 @@ impl LimitedColumnsSliceProvider {
         )
     }
 
+    /// Decompresses the given `compressed_position` back to the original board representation.
     #[inline(always)]
     pub fn uncompressed(&self, compressed_position: u64) -> u64 {
         change_number_of_columns(
@@ -202,6 +235,7 @@ impl LimitedColumnsSliceProvider {
         )
     }
 
+    /// Returns the smallest number greater than all the potential (compressed) positions exposed by `self`.
     pub fn max_compressed_end(&self) -> u64 {
         1u64 << (!self.outside_max_rectangle).count_ones()
     }

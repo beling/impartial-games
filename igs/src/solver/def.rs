@@ -4,7 +4,7 @@ use crate::dbs::{NimbersProvider, NimbersStorer};
 use crate::nimber_set::NimberSet;
 use crate::solver::StatsCollector;
 
-/// Solver that calculate nimbers using the mex function directly
+/// Solver that calculates nimbers using the mex function directly
 /// and (if G is DecomposableGame) Sprague–Grundy theorem for decomposable positions.
 pub trait DefSimpleGameSolver<G> where G: SimpleGame {
     /// Calculates nimber of the given `position` (and, for efficiency, stores it in the transposition table).
@@ -14,7 +14,7 @@ pub trait DefSimpleGameSolver<G> where G: SimpleGame {
     fn nimber_of_initial_def(&mut self) -> u8;
 }
 
-/// Solver that calculate nimbers using the mex function directly
+/// Solver that calculates nimbers using the mex function directly
 /// and (if G is DecomposableGame) Sprague–Grundy theorem for decomposable positions.
 pub trait DefDecomposableGameSolver<G> where G: DecomposableGame {
 

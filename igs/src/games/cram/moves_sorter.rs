@@ -1,3 +1,5 @@
+//! Move sorters and difficult evaluators for Cram
+//! (see [`crate::moves::DifficultEvaluator`]).
 pub use crate::game::Game;
 use crate::moves::DifficultEvaluator;
 use crate::enddb::EndDb;
