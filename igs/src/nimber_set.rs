@@ -9,19 +9,20 @@
 use bitm::n_lowest_bits;
 use crate::bit::ExtraBitMethods;
 
+/// A nimber set that can be constructed so as to include the `n` lowest nimbers *{0, 1, ..., n-1}*.
 pub trait WithLowest {
     /// Construct the set which includes the `n` lowest nimbers, i.e. *{0, 1, ..., n-1}*.
     fn with_lowest(n: u16) -> Self;
 }
 
-/// A set of nimbers (Grundy numbers).
+/// A set of nimbers (Grundy numbers). Usually, it can only represent low nimbers.
 ///
 /// It is used by the solvers to collect the nimbers of the successors of a position,
 /// and then to calculate the [mex](https://en.wikipedia.org/wiki/Mex_(mathematics)) of the set.
 pub trait NimberSet: Sized + WithLowest {
 
-    /// Extended representation of the set (see [`ExtendendNimberSet`]).
-    type Extended: ExtendendNimberSet<Self>;
+    /// Extended representation of the set that counts larger nimbers (see [`ExtendendNimberSet`]).
+    type Extended: ExtendedNimberSet<Self>;
 
     /// Construct empty set of nimbers.
     fn empty() -> Self;
@@ -55,26 +56,27 @@ pub trait NimberSet: Sized + WithLowest {
     fn each_xored_with(&self, nimber: u8) -> Self;
 }
 
-pub trait ExtendendNimberSet<NimberSet>: WithLowest {
+/// Extended representation of a [`NimberSet`].
+///
+/// It can handle sets with elements exceeding the size of the (non-extended)
+/// set representation, usually by counting their number.
+/// It is exposed as the [`NimberSet::Extended`] associated type.
+pub trait ExtendedNimberSet<NimberSet>: WithLowest {
 
     /// Copy of self without the largest element.
     fn without_largest(&self) -> NimberSet;
 
-    /**
-     * Remove exactly one nimber from the set:
-     * either a given nimber v (if it is in the set) or the largest nimber.
-     */
+    /// Remove exactly one nimber from the set:
+    /// either the given `nimber` (if it is in the set) or the largest nimber.
     fn remove_nimber(&mut self, nimber: u8);
 
-    /**
-     * Remove exactly one nimber from the set:
-     * either a given nimber v (if it is in the set) or the largest nimber.
-     * (without_largest is passed for optimization)
-    */
+    /// Remove exactly one nimber from the set:
+    /// either the given `nimber` (if it is in the set) or the largest nimber.
+    /// (`without_largest` is passed for optimization)
     fn remove_nimber_hinted(&mut self, nimber: u8, without_largest: &NimberSet);
 
     /// Remove the largest nimber from the set.
-    /// (without_largest is passed for optimization)
+    /// (`without_largest` is passed for optimization)
     fn remove_largest_hinted(&mut self, without_largest: &NimberSet);
 
     /// Get the only (or any) element from the set.
@@ -148,7 +150,7 @@ macro_rules! impl_nimber_sets_for_primitive {
             }
         }
 
-        impl ExtendendNimberSet<$type> for $ext_type {
+        impl ExtendedNimberSet<$type> for $ext_type {
 
             #[inline(always)]
             fn without_largest(&self) -> $type {
@@ -292,7 +294,7 @@ impl WithLowest for [u64; 4] {
     }
 }
 
-impl ExtendendNimberSet<[u64; 4]> for [u64; 4] {
+impl ExtendedNimberSet<[u64; 4]> for [u64; 4] {
 
     fn without_largest(&self) -> Self {
         if self[3] != 0 { [self[0], self[1], self[2], self[3].without_leading_one()] }

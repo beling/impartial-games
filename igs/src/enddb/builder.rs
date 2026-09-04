@@ -1,3 +1,7 @@
+//! The builder of endgame databases ([`EndDbBuilder`]) that calculates
+//! the nimbers of the positions given by an [`EndDbSlicesProvider`],
+//! constructs (or reads from files) the consecutive slices of the database,
+//! and can optionally cache the built slices in a directory.
 use super::{EndDb, EndDbSlicesProvider};
 use super::compressed_slice::{CompressedSlice, CompressedSliceBuilder};
 use crate::game::{SimpleGame, DecomposableGame};
@@ -12,8 +16,11 @@ pub struct EndDbBuilder<SlicesProvider, SliceBuilder, NimberChecker, CompressedS
     //where SlicesProvider: for<'si> EndDbSlicesProvider<'si, InSlicePosition=ISP, UncompressedSlice=US>,
           //SliceBuilder: CompressedSliceBuilder<ISP, US>
 {
+    /// The database being built (it already contains the slices built or read so far).
     pub enddb: EndDb<SlicesProvider, CompressedSlice>,
+    /// The builder of the (compressed) slices.
     pub builder: SliceBuilder,
+    /// The verifier that checks the built slices (or reports their statistics).
     pub verifier: NimberChecker
 }
 
@@ -27,8 +34,15 @@ impl<SlicesProvider, SliceBuilder, NimberChecker, CompressedSlice> EndDbBuilder<
     }
 }
 
-pub trait EndDbBuilderForSimpleGame<GameType> where GameType: SimpleGame {   // BBMapEndDb methods for SimpleGames
+/// The methods of [`EndDbBuilder`] for simple games.
+pub trait EndDbBuilderForSimpleGame<GameType> where GameType: SimpleGame {
+    /// Builds the next slice of the database for the given `game`.
+    /// Returns `false` (and does nothing) if all the slices have already been built.
     fn build_slice(&mut self, game: &GameType) -> bool;
+
+    /// Builds the next slice of the database for the given `game`,
+    /// using (and updating) the cache stored in the `cache_dir` directory.
+    /// Returns `false` (and does nothing) if all the slices have already been built.
     fn build_slice_cached<P: AsRef<std::path::Path>>(&mut self, game: &GameType, cache_dir: P) -> io::Result<bool>;
 
     /// Builds slices of the database upto the moment when all are built or the database size exceed optional threshold `target_size_bytes`.
@@ -36,8 +50,15 @@ pub trait EndDbBuilderForSimpleGame<GameType> where GameType: SimpleGame {   // 
     fn build<P: AsRef<std::path::Path>>(&mut self, game: &GameType, target_size_bytes: Option<usize>, cache_dir: Option<(P, bool)>);
 }
 
-pub trait EndDbBuilderForDecomposableGame<GameType> where GameType: DecomposableGame {   // BBMapEndDb methods for DecomposableGames
+/// The methods of [`EndDbBuilder`] for decomposable games.
+pub trait EndDbBuilderForDecomposableGame<GameType> where GameType: DecomposableGame {
+    /// Builds the next slice of the database for the given `game`.
+    /// Returns `false` (and does nothing) if all the slices have already been built.
     fn build_slice(&mut self, game: &GameType) -> bool;
+
+    /// Builds the next slice of the database for the given `game`,
+    /// using (and updating) the cache stored in the `cache_dir` directory.
+    /// Returns `false` (and does nothing) if all the slices have already been built.
     fn build_slice_cached<P: AsRef<std::path::Path>>(&mut self, game: &GameType, cache_dir: P) -> io::Result<bool>;
 
     /// Builds slices of the database upto the moment when all are built or the database size exceed optional threshold `target_size_bytes`.

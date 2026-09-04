@@ -1,3 +1,12 @@
+//! Slices of endgame databases and their builders.
+//!
+//! A slice ([`CompressedSlice`]) stores a fragment of an endgame database:
+//! a map from (in-slice) positions to nimbers. Several compression methods are provided:
+//! the succinct maps from the `csf` crate (`fp::Map`, `fp::CMap`, `fp::GOCMap`, `ls::Map`, `ls::CMap`),
+//! the SIMD binary-packed [`ClusterBP128`] (feature `BP128`) and the perfect-hash-based
+//! [`ClusterCMPH`] (feature `CMPH`). Each slice type has a corresponding builder
+//! (an implementation of [`CompressedSliceBuilder`]) that constructs the slice
+//! from an uncompressed map and reads/writes it from/to files.
 use std::io;
 use std::collections::HashMap;
 use std::fmt;
@@ -75,8 +84,10 @@ where C: SerializableCoding<Value=u8>+GetSize, S: BuildSeededHasher {
 }
 
 //#[derive(Default)]
+/// Builder of `fp::CMap` slices (succinct maps with coding of values).
 pub struct FPCMapBuilder<BC = BuildMinimumRedundancy, LSC = fp::OptimalLevelSize, CSB = fp::LoMemAcceptEquals, S = BuildDefaultSeededHasher>
 where LSC: fp::LevelSizer, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher {
+    /// The configuration of the constructed `fp::CMap`s.
     pub conf: fp::CMapConf<BC, LSC, CSB, S>
 }
 
@@ -162,9 +173,11 @@ impl<S: BuildSeededHasher> CompressedSlice for fp::Map<S> {
 }
 
 //#[derive(Default)]
+/// Builder of `fp::Map` slices (succinct maps without coding of values).
 pub struct FPMapBuilder<LSC = fp::OptimalLevelSize, CSB = fp::LoMemAcceptEquals, S = BuildDefaultSeededHasher>
     where LSC: fp::LevelSizer, CSB: fp::CollisionSolverBuilder, S: BuildSeededHasher
 {
+    /// The configuration of the constructed `fp::Map`s.
     pub conf: fp::MapConf<LSC, CSB, S>
 }
 
@@ -249,8 +262,10 @@ where C: SerializableCoding<Value=u8> + GetSize, GS: GroupSize, SS: SeedSize, S:
 }
 
 //#[derive(Default)]
+/// Builder of `fp::GOCMap` slices (succinct maps with groups of values and coding).
 pub struct FPCMap2Builder<GS = TwoToPowerBitsStatic::<4>, SS = TwoToPowerBitsStatic<2>, BC = BuildMinimumRedundancy, LSC = fp::OptimalLevelSize, S = BuildDefaultSeededHasher>
     where GS: GroupSize, SS: SeedSize, LSC: fp::LevelSizer, S: BuildSeededHasher {
+    /// The configuration of the constructed `fp::GOCMap`s.
     pub conf: fp::GOCMapConf<BC, LSC, GS, SS, S>
 }
 
@@ -342,8 +357,10 @@ impl<S: BuildSeededHasher> CompressedSlice for ls::Map<S> {
     }
 }
 
+/// Builder of `ls::Map` slices (succinct maps without coding of values).
 #[derive(Default, Copy, Clone)]
 pub struct LSMapBuilder<BH: BuildSeededHasher = BuildDefaultSeededHasher> {
+    /// The seeded hash builder used by the constructed `ls::Map`s.
     pub hash: BH
 }
 
@@ -416,9 +433,12 @@ where //InSliceGamePosition: std::hash::Hash,
     }
 }
 
+/// Builder of `ls::CMap` slices (succinct maps with coding of values).
 #[derive(Copy, Clone)]
 pub struct LSCMapBuilder<BC, BH: BuildSeededHasher = BuildDefaultSeededHasher> {
+    /// The seeded hash builder used by the constructed `ls::CMap`s.
     pub hash: BH,
+    /// The builder of the value coding used by the constructed `ls::CMap`s.
     pub coding: BC
 }
 

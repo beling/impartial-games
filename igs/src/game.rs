@@ -2,7 +2,7 @@
 //! Traits that a game has to implement to be solvable by the library's solvers,
 //! and helper trait/method for serialization of game positions.
 
-pub use crate::nimber_set::{NimberSet, ExtendendNimberSet};
+pub use crate::nimber_set::{NimberSet, ExtendedNimberSet};
 use crate::dbs::NimbersProvider;
 use crate::solver::{SolverForSimpleGame, SolverForDecomposableGame, StatsCollector};
 use std::io;

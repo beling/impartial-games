@@ -1,3 +1,14 @@
+//! Endgame databases - maps that store the nimbers of the positions close to the end of a game.
+//!
+//! An endgame database ([`EndDb`]) is composed of slices (see [`CompressedSlice`]), each storing
+//! a fragment of the database. The slices are usually very compact, as they are compressed
+//! with different methods: succinct data structures ([`fp`](csf::fp), [`ls`](csf::ls)),
+//! binary packing ([`ClusterBP128`], feature `BP128`) or perfect hashing ([`ClusterCMPH`], feature `CMPH`).
+//! The databases can be constructed with [`EndDbBuilder`] (or the `EndDb::build_with_*` constructors),
+//! which calculate the nimbers of the positions given by an [`EndDbSlicesProvider`]
+//! (see the implementations for the games: `Cram` and `Chomp`).
+//! Optional verifiers (see [`Verifier`]) can check the correctness of the slices or report their statistics.
+
 use crate::dbs::{NimbersProvider, NimbersStorer};
 use crate::game::{DecomposableGame, Game, SimpleGame};
 
@@ -41,6 +52,7 @@ pub struct EndDb<SlicesProvider, Slice>
 impl<SlicesProvider, SliceType> EndDb<SlicesProvider, SliceType>
     where SlicesProvider: EndDbSlicesProvider
 {
+    /// Pushes back the given `slice` and calls `slice_pushed` on the slice provider.
     pub fn push_slice(&mut self, slice: SliceType) {
         self.slices.push(slice);
         self.slice_provider.slice_pushed(self.slices.len()-1);
@@ -162,6 +174,7 @@ impl<SlicesProvider, SliceBuilder, NimberChecker, CompressedSlice> From<EndDbBui
 
 impl<SlicesProvider: EndDbSlicesProvider, C, S> EndDb<SlicesProvider, fp::CMap::<C, S>>
 {
+    /// Constructs an empty end database whose slices are of type `fp::CMap`.
     pub fn with_fpcmap(slice_provider: SlicesProvider) -> Self {
         Self { slices: Vec::new(), slice_provider }
     }
@@ -170,6 +183,7 @@ impl<SlicesProvider: EndDbSlicesProvider, C, S> EndDb<SlicesProvider, fp::CMap::
 impl<SlicesProvider, GS: GroupSize, SS: SeedSize, C, S> EndDb<SlicesProvider, fp::GOCMap::<C, GS, SS, S>>
     where SlicesProvider: EndDbSlicesProvider
 {
+    /// Constructs an empty end database whose slices are of type `fp::GOCMap`.
     pub fn with_fpcmap2(slice_provider: SlicesProvider) -> Self {
         Self { slices: Vec::new(), slice_provider }
     }
@@ -178,6 +192,7 @@ impl<SlicesProvider, GS: GroupSize, SS: SeedSize, C, S> EndDb<SlicesProvider, fp
 impl<SlicesProvider, S> EndDb<SlicesProvider, fp::Map::<S>>
     where SlicesProvider: EndDbSlicesProvider
 {
+    /// Constructs an empty end database whose slices are of type `fp::Map`.
     pub fn with_fpmap(slice_provider: SlicesProvider) -> Self {
         Self { slices: Vec::new(), slice_provider }
     }
@@ -186,6 +201,7 @@ impl<SlicesProvider, S> EndDb<SlicesProvider, fp::Map::<S>>
 impl<SlicesProvider, S> EndDb<SlicesProvider, ls::Map<S>>
     where SlicesProvider: EndDbSlicesProvider
 {
+    /// Constructs an empty end database whose slices are of type `ls::Map`.
     pub fn with_lsmap(slice_provider: SlicesProvider) -> Self {
         Self { slices: Vec::new(), slice_provider }
     }
@@ -195,6 +211,7 @@ impl<SlicesProvider, C, S> EndDb<SlicesProvider, ls::CMap::<C, S>>
     where SlicesProvider: EndDbSlicesProvider,
           //C: for <'d> Coding<'d, Value=u8>
 {
+    /// Constructs an empty end database whose slices are of type `ls::CMap`.
     pub fn with_lscmap(slice_provider: SlicesProvider) -> Self {
         Self { slices: Vec::new(), slice_provider }
     }
@@ -204,6 +221,7 @@ impl<SlicesProvider, C, S> EndDb<SlicesProvider, ls::CMap::<C, S>>
 impl<SlicesProvider> EndDb<SlicesProvider, ClusterBP128>
     where SlicesProvider: for<'si> EndDbSlicesProvider<'si, InSlicePosition=u32>
 {
+    /// Constructs an empty end database whose slices are of type `ClusterBP128`.
     pub fn with_bp128(slice_provider: SlicesProvider) -> Self {
         Self { slices: Vec::new(), slice_provider }
     }
@@ -213,6 +231,7 @@ impl<SlicesProvider> EndDb<SlicesProvider, ClusterBP128>
 impl<SlicesProvider> EndDb<SlicesProvider, ClusterCMPH>
     where SlicesProvider: for<'si> EndDbSlicesProvider<'si, InSlicePosition=u32>
 {
+    /// Constructs an empty end database whose slices are of type `ClusterCMPH`.
     pub fn with_chd(slice_provider: SlicesProvider) -> Self {
         Self { slices: Vec::new(), slice_provider }
     }
@@ -224,6 +243,8 @@ impl<C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::CMap::<C, S>>
           ISP: std::hash::Hash + Clone,
           S: BuildSeededHasher
 {
+    /// Constructs the builder of an end database with `fp::CMap` slices,
+    /// using the given configuration `fpcconf` and checking/reporting the built slices to `verifier`.
     pub fn build_with_fpcmap_conf_verifier<BC, LSC, CSB, Checker>(
         slice_provider: SlicesProvider,
         fpcconf: fp::CMapConf<BC, LSC, CSB, S>,
@@ -240,6 +261,7 @@ impl<C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::CMap::<C, S>>
         }
     }
 
+    /// Constructs the builder of an end database with `fp::CMap` slices, using the given configuration `fpcconf`.
     #[inline]
     pub fn build_with_fpcmap_conf<BC, LSC, CSB>(slice_provider: SlicesProvider, fpcconf: fp::CMapConf<BC, LSC, CSB, S>)
         -> EndDbBuilder<SlicesProvider, FPCMapBuilder<BC, LSC, CSB, S>, (), fp::CMap::<C, S>>
@@ -255,6 +277,8 @@ impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::CMap::<minimum_redunda
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>,
     ISP: std::hash::Hash + Clone
 {
+    /// Constructs the builder of an end database with `fp::CMap` slices (the default configuration),
+    /// checking/reporting the built slices to `verifier`.
     #[inline]
     pub fn build_with_fpcmap_verifier<Checker>(
         slice_provider: SlicesProvider,
@@ -263,6 +287,7 @@ impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::CMap::<minimum_redunda
         Self::build_with_fpcmap_conf_verifier(slice_provider, fp::CMapConf::default(), verifier)
     }
 
+    /// Constructs the builder of an end database with `fp::CMap` slices (the default configuration).
     #[inline]
     pub fn build_with_fpcmap(slice_provider: SlicesProvider) -> EndDbBuilder<SlicesProvider, FPCMapBuilder<BuildMinimumRedundancy>, (), fp::CMap::<minimum_redundancy::Coding<u8>>>
     {
@@ -277,6 +302,8 @@ impl<GS, SS, C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::GOCMap::<C, GS
           S: BuildSeededHasher,
           GS: GroupSize, SS: SeedSize
 {
+    /// Constructs the builder of an end database with `fp::GOCMap` slices,
+    /// using the given configuration `fpcconf` and checking/reporting the built slices to `verifier`.
     pub fn build_with_fpcmap2_conf_verifier<BC, LSC, Checker>(
         slice_provider: SlicesProvider,
         fpcconf: fp::GOCMapConf<BC, LSC, GS, SS, S>,
@@ -291,6 +318,7 @@ impl<GS, SS, C, SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::GOCMap::<C, GS
         }
     }
 
+    /// Constructs the builder of an end database with `fp::GOCMap` slices, using the given configuration `fpcconf`.
     #[inline]
     pub fn build_with_fpcmap2_conf<BC, LSC>(slice_provider: SlicesProvider, fpcconf: fp::GOCMapConf<BC, LSC, GS, SS, S>)
                                               -> EndDbBuilder<SlicesProvider, FPCMap2Builder<GS, SS, BC, LSC, S>, (), fp::GOCMap::<C, GS, SS, S>>
@@ -304,6 +332,8 @@ impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::GOCMap::<minimum_redun
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>,
           ISP: std::hash::Hash + Clone
 {
+    /// Constructs the builder of an end database with `fp::GOCMap` slices (the default configuration),
+    /// checking/reporting the built slices to `verifier`.
     #[inline]
     pub fn build_with_fpcmap2_verifier<Checker>(
         slice_provider: SlicesProvider,
@@ -312,6 +342,7 @@ impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::GOCMap::<minimum_redun
         Self::build_with_fpcmap2_conf_verifier(slice_provider, fp::GOCMapConf::default(), verifier)
     }
 
+    /// Constructs the builder of an end database with `fp::GOCMap` slices (the default configuration).
     #[inline]
     pub fn build_with_fpcmap2(slice_provider: SlicesProvider) -> EndDbBuilder<SlicesProvider, FPCMap2Builder, (), fp::GOCMap::<minimum_redundancy::Coding<u8>, TwoToPowerBitsStatic::<4>, TwoToPowerBitsStatic<2>>>
     {
@@ -324,6 +355,8 @@ impl<SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::Map::<S>>
           ISP: std::hash::Hash + Clone,
           S: BuildSeededHasher
 {
+    /// Constructs the builder of an end database with `fp::Map` slices,
+    /// using the given configuration `fpconf` and checking/reporting the built slices to `verifier`.
     pub fn build_with_fpmap_conf_verifier<LSC, CSB, Checker>(
         slice_provider: SlicesProvider,
         fpconf: fp::MapConf<LSC, CSB, S>,
@@ -339,6 +372,7 @@ impl<SlicesProvider, ISP, S> EndDb<SlicesProvider, fp::Map::<S>>
         }
     }
 
+    /// Constructs the builder of an end database with `fp::Map` slices, using the given configuration `fpconf`.
     #[inline]
     pub fn build_with_fpmap_conf<LSC, CSB>(slice_provider: SlicesProvider, fpconf: fp::MapConf<LSC, CSB, S>)
                                                    -> EndDbBuilder<SlicesProvider, FPMapBuilder<LSC, CSB, S>, (), fp::Map::<S>>
@@ -353,6 +387,8 @@ impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::Map>
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>,
           ISP: std::hash::Hash + Clone
 {
+    /// Constructs the builder of an end database with `fp::Map` slices (the default configuration),
+    /// checking/reporting the built slices to `verifier`.
     #[inline]
     pub fn build_with_fpmap_verifier<Checker>(
         slice_provider: SlicesProvider,
@@ -361,6 +397,7 @@ impl<SlicesProvider, ISP: Hash> EndDb<SlicesProvider, fp::Map>
         Self::build_with_fpmap_conf_verifier(slice_provider, fp::MapConf::default(), verifier)
     }
 
+    /// Constructs the builder of an end database with `fp::Map` slices (the default configuration).
     #[inline]
     pub fn build_with_fpmap(slice_provider: SlicesProvider) -> EndDbBuilder<SlicesProvider, FPMapBuilder, (), fp::Map> {
         Self::build_with_fpmap_conf_verifier(slice_provider, fp::MapConf::default(), ())
@@ -372,6 +409,8 @@ impl<SlicesProvider, ISP> EndDb<SlicesProvider, ls::Map>
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>,
           //ISP: std::hash::Hash + Clone
 {
+    /// Constructs the builder of an end database with `ls::Map` slices,
+    /// checking/reporting the built slices to `verifier`.
     pub fn build_with_lsmap_verifier<Checker>(slice_provider: SlicesProvider, verifier: Checker) -> EndDbBuilder<SlicesProvider, LSMapBuilder, Checker, ls::Map> {
         EndDbBuilder::<SlicesProvider, LSMapBuilder, Checker, ls::Map> {
             enddb: Self::with_lsmap(slice_provider),
@@ -380,6 +419,7 @@ impl<SlicesProvider, ISP> EndDb<SlicesProvider, ls::Map>
         }
     }
 
+    /// Constructs the builder of an end database with `ls::Map` slices.
     #[inline]
     pub fn build_with_lsmap(slice_provider: SlicesProvider) -> EndDbBuilder<SlicesProvider, LSMapBuilder, (), ls::Map> {
         Self::build_with_lsmap_verifier(slice_provider, ())
@@ -391,6 +431,8 @@ impl<SlicesProvider, ISP, S> EndDb<SlicesProvider, ls::Map<S>>
         S: BuildSeededHasher
 //ISP: std::hash::Hash + Clone
 {
+    /// Constructs the builder of an end database with `ls::Map` slices,
+    /// using the given seeded hash builder and checking/reporting the built slices to `verifier`.
     pub fn build_with_lsmap_hash_verifier<Checker>(slice_provider: SlicesProvider, hash: S, verifier: Checker) -> EndDbBuilder<SlicesProvider, LSMapBuilder<S>, Checker, ls::Map<S>> {
         EndDbBuilder::<SlicesProvider, LSMapBuilder<S>, Checker, ls::Map<S>> {
             enddb: Self::with_lsmap(slice_provider),
@@ -399,6 +441,7 @@ impl<SlicesProvider, ISP, S> EndDb<SlicesProvider, ls::Map<S>>
         }
     }
 
+    /// Constructs the builder of an end database with `ls::Map` slices, using the given seeded hash builder.
     #[inline]
     pub fn build_with_lsmap_hash(slice_provider: SlicesProvider, hash_builder: S) -> EndDbBuilder<SlicesProvider, LSMapBuilder<S>, (), ls::Map<S>> {
         Self::build_with_lsmap_hash_verifier(slice_provider, hash_builder, ())
@@ -408,6 +451,8 @@ impl<SlicesProvider, ISP, S> EndDb<SlicesProvider, ls::Map<S>>
 impl<SlicesProvider, ISP, C> EndDb<SlicesProvider, ls::CMap::<C>>
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>, C: Coding<Value=u8>
 {
+    /// Constructs the builder of an end database with `ls::CMap` slices,
+    /// using the given value coding and checking/reporting the built slices to `verifier`.
     pub fn build_with_lscmap_coding_verifier<BC, Checker>(slice_provider: SlicesProvider, coding: BC, verifier: Checker)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BC>, Checker, ls::CMap::<C>>
     {
@@ -418,6 +463,7 @@ impl<SlicesProvider, ISP, C> EndDb<SlicesProvider, ls::CMap::<C>>
         }
     }
 
+    /// Constructs the builder of an end database with `ls::CMap` slices, using the given value coding.
     #[inline]
     pub fn build_with_lscmap_coding<BC>(slice_provider: SlicesProvider, coding: BC)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BC>, (), ls::CMap::<C>>
@@ -430,12 +476,16 @@ impl<SlicesProvider, ISP> EndDb<SlicesProvider, ls::CMap::<minimum_redundancy::C
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>,
           //ISP: std::hash::Hash + Clone
 {
+    /// Constructs the builder of an end database with `ls::CMap` slices,
+    /// using the given number of bits per fragment and checking/reporting the built slices to `verifier`.
     pub fn build_with_lscmap_bpf_verifier<Checker>(slice_provider: SlicesProvider, bits_per_fragment: u8, verifier: Checker)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BuildMinimumRedundancy>, Checker, ls::CMap<minimum_redundancy::Coding<u8>>>
     {
         Self::build_with_lscmap_coding_verifier(slice_provider, BuildMinimumRedundancy{ bits_per_fragment }, verifier)
     }
 
+    /// Constructs the builder of an end database with `ls::CMap` slices,
+    /// checking/reporting the built slices to `verifier`.
     #[inline]
     pub fn build_with_lscmap_verifier<Checker>(slice_provider: SlicesProvider, verifier: Checker)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BuildMinimumRedundancy>, Checker, ls::CMap<minimum_redundancy::Coding<u8>>>
@@ -443,6 +493,7 @@ impl<SlicesProvider, ISP> EndDb<SlicesProvider, ls::CMap::<minimum_redundancy::C
         Self::build_with_lscmap_bpf_verifier(slice_provider, 0, verifier)
     }
 
+    /// Constructs the builder of an end database with `ls::CMap` slices, using the given number of bits per fragment.
     #[inline]
     pub fn build_with_lscmap_bpf(slice_provider: SlicesProvider, bits_per_fragment: u8)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BuildMinimumRedundancy>, (), ls::CMap<minimum_redundancy::Coding<u8>>>
@@ -450,6 +501,8 @@ impl<SlicesProvider, ISP> EndDb<SlicesProvider, ls::CMap::<minimum_redundancy::C
         Self::build_with_lscmap_bpf_verifier(slice_provider, bits_per_fragment, ())
     }
 
+    /// Constructs the builder of an end database with `ls::CMap` slices
+    /// (an alias for `build_with_lscmap_bpf` with 0 bits per fragment).
     #[inline]
     pub fn build_with_bdzhmap(slice_provider: SlicesProvider)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BuildMinimumRedundancy>, (), ls::CMap<minimum_redundancy::Coding<u8>>>
@@ -462,6 +515,8 @@ impl<SlicesProvider, ISP, C, S> EndDb<SlicesProvider, ls::CMap::<C, S>>
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>,
           C: Coding<Value=u8>, S: BuildSeededHasher
 {
+    /// Constructs the builder of an end database with `ls::CMap` slices,
+    /// using the given value coding and seeded hash builder, and checking/reporting the built slices to `verifier`.
     pub fn build_with_lscmap_coding_hash_verifier<BC, Checker>(slice_provider: SlicesProvider, coding: BC, hash: S, verifier: Checker)
                                                          -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BC, S>, Checker, ls::CMap::<C, S>>
     {
@@ -472,6 +527,8 @@ impl<SlicesProvider, ISP, C, S> EndDb<SlicesProvider, ls::CMap::<C, S>>
         }
     }
 
+    /// Constructs the builder of an end database with `ls::CMap` slices,
+    /// using the given value coding and seeded hash builder.
     #[inline]
     pub fn build_with_lscmap_coding_hash<BC>(slice_provider: SlicesProvider, coding: BC, hash: S)
                                        -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BC, S>, (), ls::CMap::<C, S>>
@@ -483,24 +540,31 @@ impl<SlicesProvider, ISP, C, S> EndDb<SlicesProvider, ls::CMap::<C, S>>
 impl<SlicesProvider, ISP, S> EndDb<SlicesProvider, ls::CMap::<minimum_redundancy::Coding<u8>, S>>
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=ISP>, S: BuildSeededHasher
 {
+    /// Constructs the builder of an end database with `ls::CMap` slices,
+    /// using the given seeded hash builder and number of bits per fragment, and checking/reporting the built slices to `verifier`.
     #[inline] pub fn build_with_lscmap_hash_bpf_verifier<Checker>(slice_provider: SlicesProvider, hash: S, bits_per_fragment: u8, verifier: Checker)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BuildMinimumRedundancy, S>, Checker, ls::CMap::<minimum_redundancy::Coding<u8>, S>>
     {
         Self::build_with_lscmap_coding_hash_verifier(slice_provider, BuildMinimumRedundancy{ bits_per_fragment }, hash, verifier)
     }
 
+    /// Constructs the builder of an end database with `ls::CMap` slices,
+    /// using the given seeded hash builder and checking/reporting the built slices to `verifier`.
     #[inline] pub fn build_with_lscmap_hash_verifier<Checker>(slice_provider: SlicesProvider, hash: S, verifier: Checker)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BuildMinimumRedundancy, S>, Checker, ls::CMap::<minimum_redundancy::Coding<u8>, S>>
     {
         Self::build_with_lscmap_hash_bpf_verifier(slice_provider, hash,0, verifier)
     }
 
+    /// Constructs the builder of an end database with `ls::CMap` slices,
+    /// using the given seeded hash builder and number of bits per fragment.
     #[inline] pub fn build_with_lscmap_hash_bpf(slice_provider: SlicesProvider, hash: S, bits_per_fragment: u8)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BuildMinimumRedundancy, S>, (), ls::CMap::<minimum_redundancy::Coding<u8>, S>>
     {
         Self::build_with_lscmap_hash_bpf_verifier(slice_provider, hash, bits_per_fragment, ())
     }
 
+    /// Constructs the builder of an end database with `ls::CMap` slices, using the given seeded hash builder.
     #[inline] pub fn build_with_lscmap_hash(slice_provider: SlicesProvider, hash: S)
         -> EndDbBuilder<SlicesProvider, LSCMapBuilder<BuildMinimumRedundancy, S>, (), ls::CMap::<minimum_redundancy::Coding<u8>, S>>
     {
@@ -512,6 +576,8 @@ impl<SlicesProvider, ISP, S> EndDb<SlicesProvider, ls::CMap::<minimum_redundancy
 impl<SlicesProvider> EndDb<SlicesProvider, ClusterBP128>
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=u32>
 {
+    /// Constructs the builder of an end database with `ClusterBP128` slices,
+    /// checking/reporting the built slices to `verifier`.
     pub fn build_with_bp128_verifier<Checker>(slice_provider: SlicesProvider, verifier: Checker) -> EndDbBuilder<SlicesProvider, BP128Buider, Checker, ClusterBP128> {
         EndDbBuilder::<SlicesProvider, BP128Buider, Checker, ClusterBP128> {
             enddb: Self::with_bp128(slice_provider),
@@ -520,6 +586,7 @@ impl<SlicesProvider> EndDb<SlicesProvider, ClusterBP128>
         }
     }
 
+    /// Constructs the builder of an end database with `ClusterBP128` slices.
     #[inline]
     pub fn build_with_bp128(slice_provider: SlicesProvider) -> EndDbBuilder<SlicesProvider, BP128Buider, (), ClusterBP128> {
         Self::build_with_bp128_verifier(slice_provider, ())
@@ -530,6 +597,8 @@ impl<SlicesProvider> EndDb<SlicesProvider, ClusterBP128>
 impl<SlicesProvider> EndDb<SlicesProvider, ClusterCMPH>
     where SlicesProvider: EndDbSlicesProvider<InSlicePosition=u32>
 {
+    /// Constructs the builder of an end database with `ClusterCMPH` slices, built with the CHD algorithm
+    /// (`lambda` is an average number of keys per bucket), checking/reporting the built slices to `verifier`.
     pub fn build_with_chd_verifier<Checker>(slice_provider: SlicesProvider, lambda: u8, verifier: Checker) -> EndDbBuilder<SlicesProvider, CMPHBuider, Checker, ClusterCMPH> {
         EndDbBuilder::<SlicesProvider, CMPHBuider, Checker, ClusterCMPH> {
             enddb: Self::with_chd(slice_provider),
@@ -538,6 +607,8 @@ impl<SlicesProvider> EndDb<SlicesProvider, ClusterCMPH>
         }
     }
 
+    /// Constructs the builder of an end database with `ClusterCMPH` slices, built with the CHD algorithm
+    /// (`lambda` is an average number of keys per bucket).
     #[inline]
     pub fn build_with_chd(slice_provider: SlicesProvider, lambda: u8) -> EndDbBuilder<SlicesProvider, CMPHBuider, (), ClusterCMPH> {
         Self::build_with_chd_verifier(slice_provider, lambda, ())

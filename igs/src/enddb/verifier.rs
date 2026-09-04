@@ -1,3 +1,5 @@
+//! Verifiers of the slices of endgame databases: they can check the correctness
+//! of the built (compressed) slices or report the statistics of their construction.
 use std::time::{Duration, Instant};
 use cpu_time::ProcessTime;
 use crate::dbs::{HasLen, NimbersProvider};
@@ -6,8 +8,16 @@ use super::compressed_slice::CompressedSlice;
 
 /// Verify if provider provides the same nimbers that are included in verification data (hash map)
 pub trait Verifier<InSliceGamePosition, UncompressedSlice> {
+    /// The data collected before the slice is compressed
+    /// (and used afterwards to check the compressed slice).
     type VerificationData;
+
+    /// Collects the data needed to verify (or describe) the slice
+    /// that will be constructed from the given uncompressed map of nimbers.
     fn get_verification_data(&mut self, nimbers_of_positions: &UncompressedSlice) -> Self::VerificationData;
+
+    /// Verifies (or describes) the given compressed `provider`,
+    /// using the data collected by `get_verification_data`.
     fn check<P: NimbersProvider<InSliceGamePosition> + CompressedSlice>(&mut self, data: Self::VerificationData, provider: &P);
 }
 
@@ -17,6 +27,8 @@ impl<InSliceGamePosition, UncompressedSlice> Verifier<InSliceGamePosition, Uncom
     fn check<P: NimbersProvider<InSliceGamePosition> + CompressedSlice>(&mut self, _data: Self::VerificationData, _provider: &P) {}
 }
 
+/// Verifier that checks (by asserting) whether the compressed slice provides
+/// the same nimbers as the uncompressed data.
 #[derive(Default, Copy, Clone)]
 pub struct CheckAll {}
 
@@ -34,14 +46,21 @@ impl<InSliceGamePosition, UncompressedSlice> Verifier<InSliceGamePosition, Uncom
     }
 }
 
+/// Verifier that does not check the slices but prints the statistics of their construction:
+/// the time and CPU time consumed and the compression ratio (in bits per element).
 #[derive(Default, Copy, Clone)]
 pub struct PrintStats {
+    /// The total number of the (checked) elements.
     total_number_of_elements: usize,
+    /// The total size (in bytes) of the (checked) slices.
     total_size: usize,
+    /// The total (wall-clock) time spent on checking the slices.
     total_time: Duration,
+    /// The total CPU time spent on checking the slices.
     total_cpu_time: Duration
 }
 
+/// Prints `label`, `size_bytes` (in bits) and `elements`, and their ratio.
 fn print_bps(label: &str, size_bytes: usize, elements: usize) {
     let size_bits = size_bytes * 8;
     if elements != 0 {

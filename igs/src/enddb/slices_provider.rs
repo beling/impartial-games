@@ -1,3 +1,5 @@
+//! Generic helpers for defining the slices of endgame databases:
+//! the [`EndDbSlicesProvider`] trait and the wrapper [`FilteredSliceProvider`].
 use crate::game::Game;
 use crate::dbs::NimbersProvider;
 //use std::collections::HashMap;
@@ -70,8 +72,11 @@ pub trait EndDbSlicesProvider {
 
 /// Filtered version of `slice_provider` that generates and accepts only the position that fulfil the given `predicate`.
 pub struct FilteredSliceProvider<SliceProvider, Predicate> {
+    /// The wrapped (unfiltered) slices provider.
     pub slice_provider: SliceProvider,
+    /// The predicate deciding whether a position is accepted.
     pub predicate: Predicate,
+    /// Whether the provider is exhaustive (see [`EndDbSlicesProvider::is_exhaustive`]).
     pub is_exhaustive: bool
 }
 

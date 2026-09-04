@@ -1,27 +1,35 @@
+//! A simple (uncompressed) map from positions to nimbers,
+//! used to accumulate the content of a slice before its compression.
 pub use crate::dbs::{NimbersProvider, NimbersStorer, HasLen};
 
 /// Position -> Nimbers map stored in two vectors: positions (sorted) and nimbers.
 /// Effective only when positions are added in ascendent order.
 #[derive(Clone, Default)]
 pub struct SortedPositionNimberMap<Position> {
+    /// The sorted vector of the positions.
     pub positions: Vec<Position>,
+    /// The nimbers of the positions (`nimbers[i]` is the nimber of `positions[i]`).
     pub nimbers: Vec<u8>
 }
 
 impl<Position> SortedPositionNimberMap<Position> {
 
+    /// Constructs the empty map.
     #[inline] pub fn new() -> Self {
         Self { positions: Vec::new(), nimbers: Vec::new() }
     }
 
+    /// Returns the iterator over the (position, nimber) pairs of the map.
     pub fn iter(&self) -> std::iter::Zip<std::slice::Iter<'_, Position>, std::slice::Iter<'_, u8>> {
         self.positions.iter().zip(self.nimbers.iter())
     }
 
+    /// Returns the mutable iterator over the (position, nimber) pairs of the map.
     pub fn iter_mut(&mut self) -> std::iter::Zip<std::slice::IterMut<'_, Position>, std::slice::IterMut<'_, u8>> {
         self.positions.iter_mut().zip(self.nimbers.iter_mut())
     }
 
+    /// Returns the iterator over the nimbers stored in the map.
     pub fn values(&self) -> std::slice::Iter<'_, u8> {
         self.nimbers.iter()
     }
