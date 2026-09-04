@@ -1,6 +1,9 @@
 //! Utilities for bit operations (masks, bit isolation, bit-sequence repetition)
 //! used by the library's bitboards and sets.
 
+/// Additional bit operations for primitive (unsigned) integer types.
+/// They are useful for (bit-)set manipulation and for the bitboard representation
+/// of game positions.
 pub trait ExtraBitMethods {
     /// Returns 0..01..1 mask with `n` ones, i.e. the largest `n`-bit number.
     fn with_lowest_bits(n: u8) -> Self;

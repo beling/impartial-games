@@ -23,8 +23,8 @@ pub trait Game {
     fn moves_count(&self, position: &Self::Position) -> u16;
 
     /// Tries to provide theoretical solution for (i.e. the nimber of) the given `position`.
-    /// One can use `dbs::TheoreticalSolutions` provider returned by `self.theoretical_solutions()`
-    /// as an `const_db` of any solver to utilize this method during search.
+    /// One can use the `dbs::TheoreticalSolutions` provider returned by `self.theoretical_solutions()`
+    /// as the `const_db` of any solver to utilize this method during search.
     ///
     /// The default implementation returns `None`.
     #[inline(always)]
@@ -61,8 +61,8 @@ pub trait SimpleGame: Game {    // TODO separate life-time for solver?
     /// Returns iterator over the successors of (moves available in) the `position` given.
     fn successors(&self, position: &Self::Position) -> Self::Successors<'_>;
 
-    /// Returns iterator over the successors of (moves available in) the `position` given.
-    /// Usually the iterator generates as first the moves to smaller branches of a search tree.
+    /// Returns iterator over the successors of (moves available in) the `position` given,
+    /// which generates them in heuristic order (usually the moves to smaller branches of a search tree first).
     fn successors_in_heuristic_ordered(&self, position: &Self::Position) -> Self::HeuristicallyOrderedSuccessors<'_>;
 
     /// Returns solver dedicated to game represented by `self` and collecting statistics in `stats`.

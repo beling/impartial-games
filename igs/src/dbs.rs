@@ -26,6 +26,10 @@ pub trait NimbersProvider<GamePosition> {
 }
 
 /// Store nimbers.
+///
+/// Any mutable database that maps game positions to nimbers can implement this trait.
+/// Note that `()` (the empty tuple type) implements it and ignores storing,
+/// so it can be used in place of a database when no one is needed.
 pub trait NimbersStorer<GamePosition>: NimbersProvider<GamePosition> {
     /// Saves `nimber` of the given `position`.
     fn store_nimber(&mut self, position: GamePosition, nimber: u8);

@@ -13,9 +13,9 @@ pub trait SimpleGameMoveSorter<G> where G: SimpleGame {
     /// Sorts moves from the easiest to the most difficult.
     fn sort_moves(&self, game: &G, moves: &mut [<G as Game>::Position]);
 
-    /// Removes index-th item from moves.
-    /// Default implementation calls moves.remove(index).
-    /// However, if order of moves do not need to be preserved (as sort_moves do nothing), faster removing can be performed.
+    /// Removes `index`-th item from `moves`.
+    /// Default implementation calls `moves.remove(index)`.
+    /// However, if the order of moves does not need to be preserved (as when sort_moves does nothing), faster removal can be performed.
     fn remove(moves: &mut Vec<<G as Game>::Position>, index: usize) {
         moves.remove(index);
     }
@@ -37,7 +37,9 @@ pub struct ComponentsInfo {
     /// Number of components (of decomposable position represented by `self`) in the vector of components.
     pub len: usize,
 
-    /// Nimber of removed components of decomposable position represented by `self`.
+    /// Nimber of removed components of decomposable position represented by `self`,
+    /// i.e. the xor of the nimbers of the components whose nimbers were already known
+    /// (those components are not present in the vector of components).
     pub nimber: u8
 }
 
@@ -71,9 +73,9 @@ pub trait DecomposableGameMoveSorter<G> where G: DecomposableGame {
                   move_components: &mut [<G as Game>::Position]
     );
 
-    /// Removes index-th item from moves.
-    /// Default implementation calls moves.remove(index).
-    /// However, if order of moves do not need to be preserved (as sort_moves do nothing), faster removing can be performed.
+    /// Removes `index`-th item from `moves`.
+    /// Default implementation calls `moves.remove(index)`.
+    /// However, if the order of moves does not need to be preserved (as when sort_moves does nothing), faster removal can be performed.
     #[inline(always)]
     fn remove(moves: &mut Vec<ComponentsInfo>, index: usize) {
         moves.remove(index);
