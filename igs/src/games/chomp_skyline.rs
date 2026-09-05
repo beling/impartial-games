@@ -1,3 +1,8 @@
+//! Chomp played on a rectangular chocolate bar; positions are represented as skylines,
+//! i.e. the top edge of the board is bit-encoded: 1 = move up, 0 = move right.
+//! The poisoned chocolate bar is in the lower-right corner.
+//!
+//! See the documentation of the [`Chomp`] structure for the game rules.
 use bitm::n_lowest_bits;
 
 pub use crate::game::{Game, SimpleGame};
@@ -5,15 +10,27 @@ use crate::solver::{StatsCollector, dedicated::DefSolver, Solver, SolverForSimpl
 use std::{fmt, iter::FusedIterator, collections::HashMap};
 
 
+/// Chomp played on a rectangular chocolate bar (with the poisoned square at the bottom-right corner).
+///
+/// In the variant supported here, a move consists of choosing a square of the chocolate bar
+/// and removing (chomping) it along with all the squares that lie above it and to the left of it.
+/// The player forced to take the poisoned square (i.e. the player who has no other move) loses.
+///
+/// A position is represented as a skyline: the top edge of the board is bit-encoded
+/// (from left to right): 1 = move up, 0 = move right.
+/// Positions are kept in normalized (canonical) form, which is minimum of its transpositions.
+/// Note that this representation supports boards of up to 64 fields.
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Chomp {
+    /// The number of columns of the board.
     cols: u8,
+    /// The number of rows of the board.
     rows: u8
 }
 
 impl Chomp {
     /// Construct Chomp game played on a board with given size (number of columns and rows).
-    /// Note: `number_of_cols` should be greater or equal to `number_of_rows`, otherwise they are swapped.
+    /// Note: `cols` should be greater or equal to `rows`, otherwise they are swapped.
     pub fn new(cols: u8, rows: u8) -> Self {
         assert!(cols > 0 && rows > 0 && cols + rows <= 64);
         if cols < rows {
@@ -23,12 +40,15 @@ impl Chomp {
         }
     }
 
+    /// Returns the normalized (canonical) form of the `position`,
+    /// i.e. the smaller of the skyline and its transposition.
     fn normalized(position: u64) -> u64 {
-        let mut mirrored = !(position<<1).reverse_bits();
-        mirrored >>= mirrored.trailing_ones()+1;
-        position.min(mirrored)
+        let mut transposed = !(position<<1).reverse_bits();
+        transposed >>= transposed.trailing_ones()+1;
+        position.min(transposed)
     }
 
+    /// Returns the number of moves available in the `position` given.
     #[inline(always)]
     fn moves_count(mut p: u64) -> u16 {
         /*let mut moves = 0;  // total number of 1-0 pairs
@@ -111,7 +131,7 @@ impl fmt::Display for Chomp {
     }
 }
 
-// młodsze <-> starsze
+// less significant <-> more significant bits
 // 01101011011
 
 impl Game for Chomp {
@@ -160,18 +180,28 @@ impl SimpleGame for Chomp {
 impl_serializable_game_for!(Chomp);
 
 
+/// Iterator over the moves (successors) of a Chomp skyline position.
+/// Each returned move is in normalized (canonical) form.
 pub struct ChompMovesIterator/*<'a>*/ {
     //chomp: &'a Chomp,
+    /// The position whose moves are generated.
     position: u64,
-    one_idx: u8,  // index of the current 1
-    zero_idx: i8,  // index of the current 0
-    number_of_ones: u8,    // number of ones in range [0, one_idx]
-    ones_mask: u64,    // 0..01..1 with the number of ones in range [zero_idx, one_idx]
-    zeros: u64, // 0s to process with the current 1
+    /// Index of the current 1-bit.
+    one_idx: u8,
+    /// Index of the current 0-bit.
+    zero_idx: i8,
+    /// Number of ones in range [0, one_idx].
+    number_of_ones: u8,
+    /// 0..01..1 mask with the number of ones in range [zero_idx, one_idx].
+    ones_mask: u64,
+    /// 0-bits to process with the current 1.
+    zeros: u64,
+    /// The bits of the next move that are already fixed.
     result_template: u64
 }
 
 impl ChompMovesIterator {
+    /// Constructs the iterator over the moves (successors) of the given `position`.
     pub fn new(position: u64) -> Self {
         let number_of_ones = position.count_ones() as u8;
         let one_idx = position.ilog2() as u8;
