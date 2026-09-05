@@ -1,3 +1,6 @@
+//! Chomp played on a rectangular chocolate bar; positions are represented as arrays of rows lengths.
+//!
+//! See the documentation of the [`Chomp`] structure for the game rules.
 pub use crate::game::{Game, SimpleGame};
 use crate::bit::repeat_bit_sequence;
 use std::mem::MaybeUninit;
@@ -10,6 +13,15 @@ use std::fmt;
 use bitm::n_lowest_bits;
 use csf::bits_to_store;
 
+/// Chomp played on a rectangular chocolate bar (with the poisoned square at the bottom-left corner).
+///
+/// In the variant supported here, a move consists of choosing a square of the chocolate bar
+/// and removing (chomping) it along with all the squares that lie above it and to the right of it.
+/// The player forced to take the poisoned square (i.e. the player who has no other move) loses.
+///
+/// A position is represented by the lengths of the (non-empty) rows of the remaining chocolate:
+/// each row length is stored on `bits_per_row` bits, and the lowest bits hold the first row,
+/// which includes the poisoned square. Positions are kept in normalized (canonical) form.
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Chomp {
     /// `ones[i]` consists of `i` ones, at positions: `0 * bits_per_row`, `1 * bits_per_row`, ..., `(i-1)*bits_per_row`
@@ -21,7 +33,9 @@ pub struct Chomp {
     /// `1..10..01..10..` mask that indicates rows with even indices (0, 2, ...)
     even_rows_mask: u64,
 
+    /// The number of columns of the board.
     number_of_cols: u8,
+    /// The number of rows of the board.
     number_of_rows: u8,
 
     /// Position is represented by (bit-)array of fields, each is stored at `bits_per_row` bits.
@@ -123,7 +137,8 @@ impl Chomp {
         (0..self.rows_count(position)).map(|r| { self.row(position, r) }).collect()
     }
 
-    /// Returns canonical (normalized) representation of the position.
+    /// Returns canonical (normalized) representation of the position
+    /// (minimum of `position` and its transposition).
     pub fn normalized(&self, position: u64) -> u64 {
         //println!("{:?}", self.pos_to_arr(position));
         let row = self.first_row(position);
@@ -137,6 +152,7 @@ impl Chomp {
         position.min(transposed)
     }
 
+    /// Checks whether the `position` is in canonical (normalized) form.
     #[inline(always)]
     pub fn is_normalized(&self, position: u64) -> bool {
         position == self.normalized(position)
@@ -144,7 +160,8 @@ impl Chomp {
 
     /// Returns the number of chocolate squares that constitute given board, including the poisoned one.
     fn squares_count(&self, board: u64) -> u8 {
-        // TODO jeśli bits_per_row jest małe, to można też zliczać za pomocą count_ones() osobno liczbę 1 w rzędzie 1, 2, 4, ...
+        // TODO: if bits_per_row is small, the count can also be computed with count_ones()
+        // by summing the ones of rows 1, 2, 4, ... separately
         let mut result = (board & self.even_rows_mask) + ((board>>self.bits_per_row) & self.even_rows_mask);  // up to 2 rows supported
         result += result >> (self.bits_per_row << 1); // up to 4 rows supported
         result += result >> (self.bits_per_row << 2); // up to 8 rows supported
@@ -159,25 +176,26 @@ impl Chomp {
         (63 - (board.leading_zeros() as u8) + self.bits_per_row) / self.bits_per_row
     }
 
-    /// Returns length of position's row with given index.
+    /// Returns length of `position`'s row with given `index`.
     #[inline(always)]
     fn row(&self, position: u64, index: u8) -> u8 {
         ((position >> (index*self.bits_per_row)) & self.first_row_mask) as u8
     }
 
+    /// Returns the length of the first row of the `position`.
     #[inline(always)]
     fn first_row(&self, position: u64) -> u8 {
         (position & self.first_row_mask) as u8
     }
 
+    /// Removes the first row from the `position`.
     #[inline(always)]
     fn erase_first_row(&self, position: &mut u64) {
         *position >>= self.bits_per_row;
     }
 
     /// Increment position number to next number that represent valid position.
-    /// Neither before nor after call position do not have to be normalized,
-    /// but both must be valid.
+    /// Neither the position before nor after the call has to be normalized, but both must be valid.
     fn inc_position_number(&self, position: &mut u64) {
         let mut row_shift = 0u8;
         let mut row_len = *position & self.first_row_mask;
@@ -197,7 +215,7 @@ impl Chomp {
         }
     }
 
-    /// Check if the given position is valid (but not necessary normalized).
+    /// Check if the given position is valid (but not necessarily normalized).
     pub fn is_valid(&self, mut position: u64) -> bool {
         let mut row = self.first_row(position);
         if row == 0 || row > self.number_of_cols { return false; }
@@ -217,18 +235,29 @@ impl Chomp {
     }
 }
 
+/// Iterator over the moves (successors) of a Chomp position.
+/// Each returned move is in canonical (normalized) form.
 pub struct ChompMovesIterator<'a> {
     chomp: &'a Chomp,
     /// Position for which we generate moves.
     position: u64,
+    /// The next move to be returned (in the non-transposed representation).
     current_move: u64,
+    /// The (partial) transposed form of `current_move` (rows swapped with columns).
     current_transposed_move: u64,
+    /// The part of `current_transposed_move` accumulated from the rows above the row given by `highest_row_shift`.
     transposed_over_highest: u64,
+    /// `self.chomp.ones[current_col]`
     ones_for_current_col: u64,
+    /// A part of the transposed `position` including all rows below the `i`-th row.
     transposed_below: [MaybeUninit<u64>; 17],
+    /// The bit-shift of the row that is currently chomped.
     current_row_shift: u8,
-    highest_row_shift: u8,  // shows row with the highest index and value >= current_col
+    /// The bit-shift of the highest row whose length is not less than `current_col`.
+    highest_row_shift: u8,
+    /// The index of the column that is currently chomped.
     current_col: u8,
+    /// The number of rows of the game.
     rows_count: u8
 }
 
@@ -349,6 +378,8 @@ impl SimpleGame for Chomp {
     }
 }*/
 
+/// Iterator over (canonical) positions of Chomp, enumerated in increasing order.
+/// (Designed to provide the content of the slices of an endgame database.)
 pub struct SliceIterator<'a> {
     chomp: &'a Chomp,
     /// Always in canonical form.
@@ -382,6 +413,8 @@ impl Iterator for SliceIterator<'_> {
 
 //impl FusedIterator for SliceIterator<'_> {}
 
+/// Difficult evaluator for Chomp that evaluates positions by their number of squares
+/// (positions with fewer squares, i.e. fewer bars of chocolate, are considered easier to solve).
 pub struct FewerBarsFirst;
 
 impl DifficultEvaluator for FewerBarsFirst {
