@@ -1,3 +1,8 @@
+//! Grundy's game - an impartial game in which the starting configuration is a single heap
+//! of objects, and the two players take turns splitting a single heap into two heaps
+//! of different sizes.
+//!
+//! See: <https://en.wikipedia.org/wiki/Grundy%27s_game>
 use std::{iter::FusedIterator, collections::HashMap};
 
 use crate::{game::{Game, DecomposableGame}, solver::{dedicated::DefSolver, Solver}};
@@ -8,6 +13,11 @@ use crate::{game::{Game, DecomposableGame}, solver::{dedicated::DefSolver, Solve
 /// The starting configuration is a single heap of objects, and the two players
 /// take turn splitting a single heap into two heaps of different sizes.
 /// See: <https://en.wikipedia.org/wiki/Grundy%27s_game>
+///
+/// A heap of `v + 2` objects is represented by the number `v` (in particular, the initial
+/// position of `GrundyGame(n)` is the heap of `n` objects represented as `n - 2`).
+/// Heaps of 1 and 2 objects, which are equivalent to the empty game (their nimbers are 0),
+/// may be omitted from the representations of moves and decomposable positions.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct GrundyGame(pub u16);
 
@@ -52,9 +62,17 @@ impl DecomposableGame for GrundyGame {
     
 }
 
+/// Iterator over the moves (successors) of a Grundy's game position (a single heap).
+///
+/// Each move splits the heap into two heaps of different sizes and is represented as
+/// a pair `[a, b]` of the values of the resulting heaps (see [`GrundyGame`]),
+/// sorted so that `a <= b`. Heaps of 1 and 2 objects, which are equivalent to the empty game
+/// (their nimbers are 0), may be omitted; a move with a single resulting heap is represented
+/// as `[a, u16::MAX]`.
 pub struct GrundyGameMovesIterator([u16; 2]);
 
 impl GrundyGameMovesIterator {
+    /// Constructs the iterator over the moves (successors) of the given `position` (a single heap).
     pub fn new(position: u16) -> Self {
         Self([0, position])
     }
@@ -88,6 +106,10 @@ impl ExactSizeIterator for GrundyGameMovesIterator {
 
 impl FusedIterator for GrundyGameMovesIterator {}
 
+/// Iterator over the components of a decomposable Grundy's game position.
+///
+/// The position `[a, b]` consists of the heaps `a` and `b` (see [`GrundyGame`]);
+/// the second heap is absent if `b` equals `u16::MAX`.
 pub struct GrundyGameComponentsIterator([u16; 2]);
 
 impl Iterator for GrundyGameComponentsIterator {

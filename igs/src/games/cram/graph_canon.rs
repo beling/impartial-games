@@ -4,11 +4,19 @@ use std::collections::HashMap;
 use crate::games::cram::Cram;
 use std::mem::MaybeUninit;
 
-/// Sparse graph with allocated memory
+/// Sparse graph with allocated memory.
+///
+/// It mirrors the `sparsegraph` structure of the *nauty* library:
+/// `v[i]` is the offset of the neighbors of vertex `i` in `e`,
+/// `d[i]` is the number of neighbors of vertex `i`,
+/// and `e` contains the (concatenated) lists of neighbors.
 #[derive(Debug, Default, Clone)]
 pub struct SparseGraph {
+    /// Offsets of the vertices' neighbor lists in `e`.
     pub v: Vec<size_t>,
+    /// Numbers of neighbors (out degrees) of the vertices.
     pub d: Vec<::std::os::raw::c_int>,
+    /// The (concatenated) lists of neighbors of the vertices.
     pub e: Vec<::std::os::raw::c_int>,
 }
 
@@ -70,6 +78,8 @@ impl<'a> std::convert::From<&'a mut SparseGraph> for sparsegraph {
 }
 
 
+/// Converts the given Cram `bitboard` position to a sparse graph:
+/// its vertices are the empty squares, and the edges connect the adjacent squares.
 fn position_to_graph(cram: &Cram, bitboard: u64) -> SparseGraph {
     // calculate bitboard_to_graph_index mapping and number of vertices (graph_size):
     let mut bitboard_to_graph_index = vec![0u8; cram.board_size() as usize];
@@ -104,16 +114,24 @@ fn position_to_graph(cram: &Cram, bitboard: u64) -> SparseGraph {
     result
 }
 
+/// Transposition table for Cram that identifies positions by their canonical forms,
+/// computed (with the help of the *nauty* library) as the canonical labelings of the graphs
+/// of the positions. Thanks to that, all the positions isomorphic (up to the symmetries
+/// of the board) to each other share the same entry.
 pub struct GraphCanonTT<'c> {
+    /// The game whose positions are stored.
     cram: &'c Cram,
+    /// Maps the canonical forms of positions to their nimbers.
     db: HashMap<Box<[u8]>, u8>
 }
 
 impl<'c> GraphCanonTT<'c> {
+    /// Constructs the empty transposition table for the given game.
     pub fn new(cram: &'c Cram) -> Self {
         Self { cram, db: HashMap::new() }
     }
 
+    /// Returns the (canonical form based) key of the given `position`.
     fn key(&self, position: u64) -> Box<[u8]> {
         let mut options = optionblk::default_sparse();
         let mut stats = statsblk::default();
