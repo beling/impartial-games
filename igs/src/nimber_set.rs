@@ -3,7 +3,7 @@
 //! The [`NimberSet`] trait defines operations on such sets, needed by the solvers
 //! (append, remove, mex, ...). Sets can be represented by primitive integers
 //! (`u32`, `u64`, `u128`) or by a 4-element array of `u64` (that can store any nimber).
-//! Each set also has an *extended* representation (see [`ExtendendNimberSet`]),
+//! Each set also has an *extended* representation (see [`ExtendedNimberSet`]),
 //! used for efficient removal of the largest element.
 
 use bitm::n_lowest_bits;
@@ -21,7 +21,7 @@ pub trait WithLowest {
 /// and then to calculate the [mex](https://en.wikipedia.org/wiki/Mex_(mathematics)) of the set.
 pub trait NimberSet: Sized + WithLowest {
 
-    /// Extended representation of the set that counts larger nimbers (see [`ExtendendNimberSet`]).
+    /// Extended representation of the set that counts larger nimbers (see [`ExtendedNimberSet`]).
     type Extended: ExtendedNimberSet<Self>;
 
     /// Construct empty set of nimbers.
@@ -34,25 +34,25 @@ pub trait NimberSet: Sized + WithLowest {
         result
     }
 
-    /// Append nimber to self.
+    /// Append nimber to `self`.
     fn append(&mut self, nimber: u8);
 
-    /// Append nimber from self.
+    /// Remove nimber from `self`.
     fn remove(&mut self, nimber: u8);
 
-    /// Check if self includes nimber.
+    /// Check if `self` includes nimber.
     fn includes(&self, nimber: u8) -> bool;
 
     /// Minimal nimber not included in the set.
     fn mex(&self) -> u8;
 
-    /// Returns the intersection of self and other.
+    /// Returns the intersection of `self` and other.
     fn intersected_with(&self, other: &Self) -> Self;
 
     /// Construct the set which includes all the nimbers upto `n`, i.e. *{0, 1, ..., n}*, where `n` is the largest element of self.
     fn upto_largest(&self) -> Self;
 
-    /// Return (bit-)set consisted of all values from self, each xored with nimber.
+    /// Return (bit-)set consisted of all values from `self`, each xored with nimber.
     fn each_xored_with(&self, nimber: u8) -> Self;
 }
 
@@ -63,7 +63,7 @@ pub trait NimberSet: Sized + WithLowest {
 /// It is exposed as the [`NimberSet::Extended`] associated type.
 pub trait ExtendedNimberSet<NimberSet>: WithLowest {
 
-    /// Copy of self without the largest element.
+    /// Copy of `self` without the largest element.
     fn without_largest(&self) -> NimberSet;
 
     /// Remove exactly one nimber from the set:
@@ -87,7 +87,7 @@ pub trait ExtendedNimberSet<NimberSet>: WithLowest {
 }
 
 /// Implements [`NimberSet`] for a primitive integer type, and the corresponding
-/// [`ExtendendNimberSet`] for the extended type that can handle sets with
+/// [`ExtendedNimberSet`] for the extended type that can handle sets with
 /// elements exceeding the size of the primitive type.
 macro_rules! impl_nimber_sets_for_primitive {
     ($ext_type:ident extends $type:ty) => {

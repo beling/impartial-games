@@ -2,8 +2,8 @@
 //!
 //! An endgame database ([`EndDb`]) is composed of slices (see [`CompressedSlice`]), each storing
 //! a fragment of the database. The slices are usually very compact, as they are compressed
-//! with different methods: succinct data structures ([`fp`](csf::fp), [`ls`](csf::ls)),
-//! binary packing ([`ClusterBP128`], feature `BP128`) or perfect hashing ([`ClusterCMPH`], feature `CMPH`).
+//! with different methods: succinct data structures ([`fp`], [`ls`]),
+//! binary packing (`ClusterBP128`, feature `BP128`) or perfect hashing (`ClusterCMPH`, feature `CMPH`).
 //! The databases can be constructed with [`EndDbBuilder`] (or the `EndDb::build_with_*` constructors),
 //! which calculate the nimbers of the positions given by an [`EndDbSlicesProvider`]
 //! (see the implementations for the games: `Cram` and `Chomp`).
@@ -37,8 +37,8 @@ use csf::coding::{BuildCoding, Coding, minimum_redundancy, BuildMinimumRedundanc
 use ph::BuildSeededHasher;
 use ph::fmph::{GroupSize, SeedSize, TwoToPowerBitsStatic};
 
-/// End database - maps position near the end of the game to nimbers.
-/// It is usually divided into slices.
+/// Endgame database - a map that assigns nimbers to the positions near the end of the game.
+/// It is usually divided into slices (see the [module documentation](self)).
 pub struct EndDb<SlicesProvider, Slice>
     //where SlicesProvider: for<'si> EndDbSlicesProvider<'si>
 {

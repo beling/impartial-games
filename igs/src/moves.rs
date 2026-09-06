@@ -5,7 +5,7 @@
 use crate::game::{Game, SimpleGame, DecomposableGame};
 use co_sort::Permutation;
 
-/// Sorts moves of a simple game, used by the solver to prune larger part of the search tree.
+/// Sorts moves of a simple game, used by the solver to prune a larger part of the search tree.
 ///
 /// One can implement [`DifficultEvaluator`] instead of implementing `SimpleGameMoveSorter` directly.
 pub trait SimpleGameMoveSorter<G> where G: SimpleGame {

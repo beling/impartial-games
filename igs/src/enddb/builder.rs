@@ -67,6 +67,9 @@ pub trait EndDbBuilderForDecomposableGame<GameType> where GameType: Decomposable
 }
 
 /// Creates cache directory and returns name of cache file.
+/// Returns the path of the cache file for the `slice_index`-th slice of the database
+/// of the given `game`, built with the slice builder named `method_name`
+/// (the directory is created if it does not exist yet).
 fn cache_file_name<P: AsRef<std::path::Path>, G: fmt::Display>(cache_dir: P, game: &G, method_name: &str, slice_index: usize) -> io::Result<PathBuf> {
     let mut result = std::path::PathBuf::new();
     result.push(cache_dir);
@@ -77,6 +80,8 @@ fn cache_file_name<P: AsRef<std::path::Path>, G: fmt::Display>(cache_dir: P, gam
     Ok(result)
 }
 
+/// Implements the methods of [`EndDbBuilderForSimpleGame`] and [`EndDbBuilderForDecomposableGame`]
+/// other than `build_slice` (i.e. `build_slice_cached` and `build`) for the given game type.
 macro_rules! impl_bbenddbfor_trait_methods {
     ($GameType:path) => {
         fn build_slice_cached<P: AsRef<std::path::Path>>(&mut self, game: &$GameType, cache_dir: P) -> io::Result<bool> {

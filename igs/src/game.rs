@@ -23,7 +23,7 @@ pub trait Game {
     fn moves_count(&self, position: &Self::Position) -> u16;
 
     /// Tries to provide theoretical solution for (i.e. the nimber of) the given `position`.
-    /// One can use the `dbs::TheoreticalSolutions` provider returned by `self.theoretical_solutions()`
+    /// One can use the [`TheoreticalSolutions`] provider returned by `self.theoretical_solutions()`
     /// as the `const_db` of any solver to utilize this method during search.
     ///
     /// The default implementation returns `None`.

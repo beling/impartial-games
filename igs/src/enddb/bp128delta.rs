@@ -1,3 +1,10 @@
+//! Endgame database slices compressed with the SIMD-BP128 method
+//! (delta-encoded binary packing with SIMD instructions from the `simdcomp` library).
+//!
+//! The main type is [`ClusterBP128`], which stores a map from positions (of the type `u32`)
+//! to nimbers, using delta binary packing (see the `simdcomp` library by D. Lemire)
+//! in blocks of 128 positions.
+
 use csf::utils::ceiling_div;
 
 #[cfg(target_arch = "x86")]
@@ -15,9 +22,10 @@ use std::mem::MaybeUninit;
 use co_sort::*;
 use std::collections::HashMap;
 
+// The SIMD functions of the `simdcomp` library (by D. Lemire) used for delta binary packing.
 #[allow(improper_ctypes)]
 #[link(name = "simdcomp")]
-extern {
+extern "C" {
     fn simdmaxbitsd1(initvalue: u32, input: *const u32) -> u32;
     fn simdpackwithoutmaskd1(initvalue: u32, input: *const u32, output: *mut __m128i, bit: u32);
     fn simdpack_shortlength(input: *const u32, length: c_int, out: *mut __m128i, bit: u32) -> *mut __m128i;
@@ -26,16 +34,31 @@ extern {
     fn simdselectFOR(initvalue: u32, input: *const __m128i, bit: u32, slot: c_int) -> u32;
 }
 
+/// A map from (compressed) positions to nimbers, stored in one cluster of an endgame database,
+/// compressed with the SIMD-BP128 method (delta-encoded, SIMD binary packing).
+///
+/// Nimbers are stored for pairs of consecutive (sorted) positions: each block covers 128
+/// consecutive positions, the deltas of the positions are binary-packed with the SIMD
+/// instructions of the `simdcomp` library, and the pairs of nimbers are packed together
+/// into the minimal number of bits needed to store all pairs from the block.
 pub struct ClusterBP128 {
+    /// The (position of the) second position of each block.
     block_second_positions: Box<[u32]>,
+    /// For each block: the offset of its data, the number of bits per entry and the maximal nimber.
     blocks_metadata: Box<[u32]>,
+    /// For each block: the nimbers of the first two positions (stored on 4 bits each).
     blocks_nimbers: Box<[u8]>,
+    /// The (binary-packed) data of the blocks.
     data: Box<[__m128i]>
 }
 
 impl ClusterBP128 {
-    const NIMBERS_IN_BLOCK: usize = 128 * 2 + 2;   // 128*2 binary packed + 2 in meta-data
+    /// The number of positions covered by a single block
+    /// (the nimbers of 128 position pairs are binary-packed,
+    /// and the nimbers of the first two positions are stored in the block meta-data).
+    const NIMBERS_IN_BLOCK: usize = 128 * 2 + 2;
 
+    /// Packs `(data_index, bits_per_entry, max_nimber)` into a single 32-bit word of block metadata.
     fn metadata(data_index: u32, bits_per_entry: u8, max_nimber: u8) -> u32 {
         assert!(data_index < (1u32 << 23));
         assert!(bits_per_entry < (1u8 << 5));
@@ -50,24 +73,31 @@ impl ClusterBP128 {
         return (rest >> 9, bits_per_entry, max_nimber);
     }
 
+    /// Sets the nimber of the first position of the block (stored on the lowest 4 bits).
     fn set_nimber_of_first(block_nimber: &mut u8, nimber_to_set: u8) {
         debug_assert!(nimber_to_set < 16);
         *block_nimber |= nimber_to_set;
     }
 
+    /// Returns the nimber of the first position of the block (stored on the lowest 4 bits).
     fn get_nimber_of_first(block_nimber: u8) -> u8 { block_nimber & 15 }
 
+    /// Sets the nimber of the second position of the block (stored on the highest 4 bits).
     fn set_nimber_of_second(block_nimber: &mut u8, nimber_to_set: u8) {
         debug_assert!(nimber_to_set < 16);
         *block_nimber |= nimber_to_set << 4;
     }
 
+    /// Returns the nimber of the second position of the block (stored on the highest 4 bits).
     fn get_nimber_of_second(block_nimber: u8) -> u8 { block_nimber >> 4 }
 
+    /// Returns the number of bits needed to store a (packed) pair of nimbers not greater than `max_nimber`.
     fn bits_to_store_2_nimbers(max_nimber: u8) -> u8 {
         return bits_to_store!(max_nimber*(max_nimber+2));
     }
 
+    /// Removes the positions whose nimbers equal the nimbers of their successors
+    /// (the nimber of the position preceding a run of equal nimbers is kept).
     fn prefilter(positions: &[u32], nimbers: &[u8]) -> (Vec<u32>, Vec<u8>) {
         assert_eq!(positions.len(), nimbers.len());
         let mut pre_filtered_positions = Vec::with_capacity(positions.len());
@@ -94,6 +124,8 @@ impl ClusterBP128 {
         (pre_filtered_positions, pre_filtered_nimbers)
     }
 
+    /// Constructs the cluster from the given pre-filtered (see [`ClusterBP128::prefilter`]),
+    /// sorted arrays of positions and nimbers.
     fn from_prefiltered(positions: &[u32], nimbers: &[u8]) -> Self {
         let blocks_count = ceiling_div(nimbers.len(), Self::NIMBERS_IN_BLOCK);
         let mut block_second_positions = vec![0u32; blocks_count].into_boxed_slice();
@@ -224,6 +256,7 @@ impl ClusterBP128 {
         }
     }
 
+    /// Constructs the cluster from the given sorted arrays of positions and nimbers.
     #[inline]
     pub fn from_sorted(positions: &[u32], nimbers: &[u8]) -> Self {
         let (positions, nimbers) = Self::prefilter(positions, nimbers);
@@ -231,11 +264,15 @@ impl ClusterBP128 {
     }
 
     #[inline]
+    /// Constructs the cluster from the given (possibly unsorted) arrays of positions and nimbers
+    /// (the arrays are sorted in place and thus modified).
     pub fn from_unsorted(positions: &mut [u32], nimbers: &mut [u8]) -> Self {
         co_sort!(positions, nimbers);
         Self::from_sorted(positions, nimbers)
     }
 
+    /// Returns the nimber of the given position `p`.
+    /// Positions not included in the cluster are mapped to the nimbers of their closest predecessors.
     pub fn get(&self, p: u32) -> u8 {
         //let mut second_p_in_block = self.block_second_positions.partition_point(|e| *e <= p); // OK but unstable
         let mut block_index = self.block_second_positions.upper_bound(&p);
@@ -271,6 +308,7 @@ impl ClusterBP128 {
         }
     }
 
+    /// Returns the size of `self` in bytes (including dynamically allocated memory).
     pub fn size_bytes(&self) -> usize {
         self.block_second_positions.len() * std::mem::size_of::<u32>() +
             self.blocks_metadata.len() * std::mem::size_of::<u32>() +
@@ -282,6 +320,7 @@ impl ClusterBP128 {
 
 
 
+/// Converts the (position, nimber) pairs generated by `map` to two parallel vectors.
 fn iter_to_vecs<'a, 'b, M: Iterator<Item=(&'a u32, &'b u8)>>(map: M, len: usize) -> (Vec<u32>, Vec<u8>) {
     let mut positions = Vec::with_capacity(len);
     let mut nimbers = Vec::with_capacity(len);
@@ -292,6 +331,7 @@ fn iter_to_vecs<'a, 'b, M: Iterator<Item=(&'a u32, &'b u8)>>(map: M, len: usize)
     (positions, nimbers)
 }
 
+/// Converts the given map to two parallel vectors: of positions and of nimbers.
 #[inline]
 fn map_to_vecs<S>(map: &HashMap<u32, u8, S>) -> (Vec<u32>, Vec<u8>) {
     iter_to_vecs(map.iter(), map.len())

@@ -3,8 +3,8 @@
 //! A slice ([`CompressedSlice`]) stores a fragment of an endgame database:
 //! a map from (in-slice) positions to nimbers. Several compression methods are provided:
 //! the succinct maps from the `csf` crate (`fp::Map`, `fp::CMap`, `fp::GOCMap`, `ls::Map`, `ls::CMap`),
-//! the SIMD binary-packed [`ClusterBP128`] (feature `BP128`) and the perfect-hash-based
-//! [`ClusterCMPH`] (feature `CMPH`). Each slice type has a corresponding builder
+//! the SIMD binary-packed `ClusterBP128` (feature `BP128`) and the perfect-hash-based
+//! `ClusterCMPH` (feature `CMPH`). Each slice type has a corresponding builder
 //! (an implementation of [`CompressedSliceBuilder`]) that constructs the slice
 //! from an uncompressed map and reads/writes it from/to files.
 use std::io;
@@ -516,6 +516,7 @@ impl CompressedSlice<u32> for ClusterBP128 {
 
 #[cfg(feature = "BP128")]
 #[derive(Default, Copy, Clone)]
+/// Builder of the `ClusterBP128` slices (SIMD delta binary packing).
 pub struct BP128Buider {}
 
 #[cfg(feature = "BP128")]
@@ -582,6 +583,7 @@ impl CompressedSlice<u32> for ClusterCMPH {
 
 #[cfg(feature = "CMPH")]
 #[derive(Copy, Clone)]
+/// Builder of the `ClusterCMPH` slices (perfect hashing with the CHD algorithm of the `cmph` library).
 pub struct CMPHBuider {
     /// an average number of keys per bucket; it can be tuned to obtain different trade-offs between generation time and representation size
     pub lambda: u8

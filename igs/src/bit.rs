@@ -6,6 +6,7 @@
 /// of game positions.
 pub trait ExtraBitMethods {
     /// Returns 0..01..1 mask with `n` ones, i.e. the largest `n`-bit number.
+    /// The caller must ensure that `n` is less than the bit width of `Self`.
     fn with_lowest_bits(n: u8) -> Self;
 
     /// Returns 0..01..1 mask with `n` ones, or `Self::MAX` if `n` is too large.
@@ -17,20 +18,23 @@ pub trait ExtraBitMethods {
     /// Returns the lowest bit of `self`.
     fn isolate_trailing_one(self) -> Self;
 
-    /// Returns the highest bit of `self`.
+    /// Returns the highest (most significant) bit of `self`.
     fn isolate_leading_one(self) -> Self;
 
-    /// Returns the smallest 0..01..1 mask witch includes all ones of `self`.
+    /// Returns the smallest 0..01..1 mask which includes all ones of `self`.
     fn upto_leading_one(self) -> Self;
 
-    /// Returns the copy of `self` without leading one.
+    /// Returns a copy of `self` without the leading one.
     fn without_leading_one(self) -> Self;
 
-    /// Clear leading one in `self`.
+    /// Clears the leading one in `self`.
     fn clear_leading_one(&mut self);
 }
 
 /// Implements [`ExtraBitMethods`] for an integer type, given only the (type-dependent) [`ExtraBitMethods::upto_leading_one`].
+///
+/// The implementing type has to define only `upto_leading_one`;
+/// all the other methods of [`ExtraBitMethods`] are defined by this macro.
 macro_rules! impl_some_extra_bits_methods {
     () => {
         #[inline(always)] fn with_lowest_bits(n: u8) -> Self {

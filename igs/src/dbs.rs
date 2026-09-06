@@ -7,7 +7,7 @@ use std::hash::Hash;
 
 #[cfg(feature = "lru")] use lru::LruCache;
 
-/// Provide nimbers.
+/// Provides nimbers.
 ///
 /// Any database that maps game positions to nimbers can implement this trait.
 /// Note that `()` (the empty tuple type) implements it and always returns `None`,
@@ -25,7 +25,7 @@ pub trait NimbersProvider<GamePosition> {
     }
 }
 
-/// Store nimbers.
+/// Stores nimbers.
 ///
 /// Any mutable database that maps game positions to nimbers can implement this trait.
 /// Note that `()` (the empty tuple type) implements it and ignores storing,
