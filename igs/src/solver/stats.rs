@@ -22,7 +22,7 @@ impl ProgressReporter for () {
     #[inline(always)] fn progress(&mut self, _current: u16) {}
 }
 
-/// Prints search progress to std-out.
+/// Prints search progress to standard output.
 #[derive(Copy, Clone)]
 pub struct PrintProgress;
 
@@ -61,12 +61,12 @@ impl ProgressReporter for PrintProgress {
 /// Default implementations of all `StatsCollector` methods do nothing.
 pub trait StatsCollector {
 
-    /// Called by the search algorithm at the begging of each recursive call (for each position).
+    /// Called by the search algorithm at the beginning of each recursive call (for each position).
     /// It enables investigating the shape of the search tree (of depth-first search process).
     /// Visiting of each node is finished by calling one of: exact, unknown, db_cut.
     #[inline(always)] fn pre(&mut self) {}
 
-    /// Called by the search algorithm at the begging of ETC phase.
+    /// Called by the search algorithm at the beginning of the ETC phase.
     #[inline(always)] fn etc(&mut self) {}
 
     /// Called by the search algorithm just before loop that iterates over moves and recursively calls the algorithm.
@@ -79,17 +79,17 @@ pub trait StatsCollector {
     #[inline(always)] fn const_db_read(&mut self) {}
 
     /// Called when value (passed nimber) read from database (transposition table or const database) caused skipping position (usually by ETC).
-    /// Type of database can be find by checking which call, TT_read or const_db_read, directly preceded db_cut.
+    /// The type of the database can be found by checking which call, `tt_read` or `const_db_read`, directly preceded `db_skip`.
     #[inline(always)] fn db_skip(&mut self, _nimber: u8) {}
 
     /// Called when value (passed nimber) read from database (transposition table or const database) caused pruning.
-    /// Type of database can be find by checking which call, TT_read or const_db_read, directly preceded db_cut.
+    /// The type of the database can be found by checking which call, `tt_read` or `const_db_read`, directly preceded `db_cut`.
     #[inline(always)] fn db_cut(&mut self, _nimber: u8) {}
 
     /// Called for each position which was recursively searched, but whose nimber wasn't established (due to pruning algorithm).
     #[inline(always)] fn unknown(&mut self) {}
 
-    /// Called for each position whose nimber (given as parameter) is calculated and writen to TT; called for each writing to TT.
+    /// Called for each position whose nimber (given as parameter) is calculated and written to TT; called for each writing to TT.
     #[inline(always)] fn exact(&mut self, _nimber: u8) {}
 
     /// Reset statistics.
@@ -172,14 +172,16 @@ impl fmt::Display for EventType {
     }
 }
 
-/// Count events, separately for various types and search phases.
+/// Counts events, separately for various types and search phases.
 #[derive(Default, Copy, Clone)]
 pub struct EventCounters {
     /// Counts any event in any phase.
     events_count: [[u64; 3]; 8]
 }
 
+/// Format of a single (middle) row of the statistics report.
 macro_rules! fs { () => ("{:17} {:>10} {:>10} {:>10} {:>10}") }
+/// Format of the header/title row of the statistics report (right-aligned).
 macro_rules! fs_title { () => ("{:>17} {:>10} {:>10} {:>10} {:>10}") }
 
 impl EventCounters {
@@ -195,7 +197,7 @@ impl EventCounters {
         self.events_count[event as usize][phase as usize]
     }
 
-    /// Returns number of nodes visited during search, which equals to number of returning all events.
+    /// Returns number of nodes visited during search, which equals the number of return events of all types.
     pub fn nodes_visited(&self) -> u64 {
         self.returns_in_phase(SearchPhase::Pre) + self.returns_in_phase(SearchPhase::ETC) + self.returns_in_phase(SearchPhase::Recursive)
     }
@@ -411,7 +413,7 @@ pub struct EventStatsAtLevels {
     read_was_from_tt: bool
 }
 
-/// Enlarge (with defaults values) vector vec to have given index and return vec[index].
+/// Enlarges (with default values) `vec` to have the given `index` and returns `vec[index]`.
 #[inline] fn enlarge_to_index<T: Default>(vec: &mut Vec<T>, index: usize) -> &mut T {
     if index >= vec.len() {
         vec.resize_with(index+1, Default::default);
@@ -489,6 +491,7 @@ impl StatsCollector for EventStatsAtLevels {
     }
 }
 
+/// Format of a single row of the per-level statistics report.
 macro_rules! fs_level { () => ("{:4} {:>10}") }
 
 impl fmt::Display for EventStatsAtLevels {
@@ -503,6 +506,7 @@ impl fmt::Display for EventStatsAtLevels {
     }
 }
 
+/// Format of a single row of the nimber statistics report.
 macro_rules! ncf { () => ("{:>6} {:>10} {:>10} {:>10}") }
 //macro_rules! ncf_r { () => (concat!(" " ncf_l!())) }
 

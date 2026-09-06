@@ -65,7 +65,7 @@ impl ClusterConf {
     }
 }
 
-/// Clusters update and lookup policy. The module `cluster_policy` includes many implementations.
+/// Clusters update and lookup policy. The [`cluster_policy`] module includes many implementations.
 pub trait ClusterPolicy {
     /// Conditionally stores `to_store` (which includes given nimber) in the given `cluster`.
     ///

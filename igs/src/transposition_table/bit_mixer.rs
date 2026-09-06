@@ -46,7 +46,9 @@ pub fn xmxmx(mut x: u64, mask: u64) -> u64 {
     x ^ (x >> 27)
 }
 
-/// Slightly generalized (masked) version of https://gist.github.com/degski/6e2069d6035ae04d5d6f64981c995ec2
+/// Slightly generalized (masked) version of the bit-mixing function by <cite>[degski][1]</cite>.
+///
+/// [1]: <https://gist.github.com/degski/6e2069d6035ae04d5d6f64981c995ec2>
 #[inline]
 pub fn degski(mut x: u64, mask: u64) -> u64 {
     x = ((x ^ (x >> 32)).wrapping_mul(0xD6E8FEB86659FD93)) & mask;

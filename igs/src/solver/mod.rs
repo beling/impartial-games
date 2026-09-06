@@ -43,8 +43,8 @@ mod outcome;
 /// - LV method (improved by Beling, see `LVBSimpleGameSolver`/`LVBDecomposableGameSolver`),
 /// - Beling's method (described by Beling and Rogalski, see `BRSimpleGameSolver`/`BRDecomposableGameSolver`).
 ///
-/// Empty type "()" can be given as transposition_table or const_db to calculate without these nimber bases.
-/// Also a tuple of databases (const_db1, const_db2, ...) can be given as const_db to use multiple const databases.
+/// Empty type "()" can be given as `transposition_table` or `const_db` to calculate without these nimber bases.
+/// Also a tuple of databases (const_db1, const_db2, ...) can be given as `const_db` to use multiple const databases.
 ///
 /// The recommended way to solve a game is to construct the solver by `game.solver()` or
 /// `game.solver_with_stats(stats)`, and then to call one of the calculation methods
