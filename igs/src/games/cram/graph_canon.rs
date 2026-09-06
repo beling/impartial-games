@@ -1,3 +1,7 @@
+//! Canonicalization of Cram positions (with the help of the *nauty* library)
+//! and the transposition table ([`GraphCanonTT`]) that identifies positions
+//! by their canonical forms.
+
 use nauty_Traces_sys::{sparsegraph, size_t, optionblk, statsblk, sparsenauty, sortlists_sg, TRUE, SG_FREE, FALSE};
 use crate::dbs::{NimbersProvider, NimbersStorer, HasLen};
 use std::collections::HashMap;

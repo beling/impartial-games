@@ -59,6 +59,8 @@ impl Game for Chomp {
         (self.squares_count(*p) - 1) as u16
     }
 
+    /// Nimbers of the positions with at most one row of length greater than 1
+    /// are known in closed form, so they are solved theoretically.
     fn try_solve_theoretically(&self, position: &Self::Position) -> Option<u8> {
         if self.row(*position, 1) <= 1 {
             Some((self.rows_count(*position) - 1) ^ (self.row(*position, 0) - 1))
@@ -108,8 +110,13 @@ impl Chomp {
     /// Construct position from array of rows lengths.
     ///
     /// Input requirements (the method panics if they are not met):
-    /// - rows must be in non-increasing order, not empty, and has length <= number_of_rows;
-    /// - rows[0] is the length of the first row, includes the poisoned square, and must be in range [1, number_of_cols].
+    /// - `rows` must be in non-increasing order, must not be empty, and must have length <= `number_of_rows`;
+    /// - `rows\[0\]` is the length of the first row, includes the poisoned square,
+    ///   and must be in the range [1, number_of_cols].
+    ///
+    /// # Safety
+    /// The constructed position is not normalized (canonical), so it is the caller's responsibility
+    /// to normalize it (e.g. with [`Chomp::normalized`]) if a canonical form is needed.
     pub unsafe fn pos_without_normalization(&self, rows: &[u8]) -> u64 {
         assert!(rows.len() <= self.number_of_rows as usize);
         assert!(!rows.is_empty());
@@ -125,8 +132,9 @@ impl Chomp {
     /// Construct position (in canonical form) from array of rows lengths.
     ///
     /// Input requirements (the method panics if they are not met):
-    /// - rows must be in non-increasing order, not empty, and has length <= number_of_rows;
-    /// - rows[0] is the length of the first row, includes the poisoned square, and must be in range [1, number_of_cols].
+    /// - `rows` must be in non-increasing order, must not be empty, and must have length <= `number_of_rows`;
+    /// - `rows\[0\]` is the length of the first row, includes the poisoned square,
+    ///   and must be in the range [1, number_of_cols].
     #[inline(always)]
     pub fn pos(&self, rows: &[u8]) -> u64 {
         self.normalized(unsafe { self.pos_without_normalization(rows) })
@@ -262,7 +270,8 @@ pub struct ChompMovesIterator<'a> {
 }
 
 impl ChompMovesIterator<'_> {
-    fn new(chomp: &Chomp, position: u64) -> ChompMovesIterator {
+    /// Constructs the iterator over the moves (successors) of the given `position`.
+    fn new(chomp: &Chomp, position: u64) -> ChompMovesIterator<'_> {
         let rows_count = chomp.rows_count(position);
         let current_row_shift = rows_count * chomp.bits_per_row;
         let mut result = ChompMovesIterator {

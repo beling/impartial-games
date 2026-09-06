@@ -19,7 +19,10 @@ use crate::{game::{Game, DecomposableGame}, solver::{dedicated::DefSolver, Solve
 /// Heaps of 1 and 2 objects, which are equivalent to the empty game (their nimbers are 0),
 /// may be omitted from the representations of moves and decomposable positions.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct GrundyGame(pub u16);
+pub struct GrundyGame(
+    /// The number of objects in the (single) heap of the initial position.
+    pub u16
+);
 
 impl Game for GrundyGame {
     type Position = u16;

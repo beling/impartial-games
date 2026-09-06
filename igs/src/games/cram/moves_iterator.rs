@@ -69,24 +69,24 @@ impl FusedIterator for CramSimpleMovesIterator {}
 /// - first, all vertical moves starting from the central column;
 /// - next, all horizontal moves starting from the central row.
 pub struct Cram2ColumnsMovesIterator {
-    /// the position whose successors are generated
+    /// The position whose successors are generated.
     position: u64,
 
-    /// all horizontal moves left to generate
+    /// All horizontal moves left to generate.
     horizontal_moves_left: u64,
 
-    /// mask that restrict horizontal moves;
-    /// at the beginning it contains a central row, then it is expanded by two rows (one up and one down)
+    /// Mask that restricts horizontal moves;
+    /// at the beginning it contains a central row, then it is expanded by two rows (one up and one down).
     horizontal_moves_mask: u64,
 
-    /// all vertical moves left to generate
+    /// All vertical moves left to generate.
     vertical_moves_left: u64,
 
-    /// mask that restrict vertical moves;
-    /// at the beginning it contains a central column, then it is expanded by two columns (one left and one right)
+    /// Mask that restricts vertical moves;
+    /// at the beginning it contains a central column, then it is expanded by two columns (one left and one right).
     vertical_moves_mask: u64,
 
-    /// number of boards columns
+    /// The number of the board columns.
     number_of_columns: u8
 }
 
@@ -152,11 +152,18 @@ impl FusedIterator for Cram2ColumnsMovesIterator {}
 /// - first, all vertical moves starting from the central column (adding one column at a time, alternating between left and right);
 /// - next, all horizontal moves in increasing fields order.
 pub struct CramCenterFirstMovesIterator {
+    /// The position whose successors are generated.
     position: u64,
+    /// All horizontal moves left to generate.
     horizontal_moves_left: u64,
+    /// All vertical moves left to generate.
     vertical_moves_left: u64,
+    /// Mask that restricts vertical moves;
+    /// at the beginning it contains a central column, then it is expanded by one column (left or right).
     vertical_moves_mask: u64,
+    /// Whether the next expansion of `vertical_moves_mask` goes left (and not right).
     expand_left: bool,
+    /// The number of the board columns.
     number_of_columns: u8
 }
 

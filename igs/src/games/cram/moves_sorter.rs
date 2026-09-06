@@ -5,7 +5,7 @@ use crate::moves::DifficultEvaluator;
 use crate::enddb::EndDb;
 use super::Cram;
 
-/// Implements `DifficultEvaluator` for `Cram`.
+/// Implements [`DifficultEvaluator`] for [`Cram`].
 /// This evaluator requires and works well with `EndDb`.
 /// It also should be constructed from `EndDb`, after construction of all slices of end db.
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -37,7 +37,8 @@ impl<SliceType> From<&EndDb<&Cram, SliceType>> for CramDifficultEvaluator {
     }
 }
 
-/// Move sorter and difficult evaluator which evaluate positions with less components and more empty fields as harder to solve.
+/// Move sorter and difficult evaluator which evaluates positions with fewer components
+/// and more empty squares as harder to solve.
 pub struct SmallerComponentsFirst;
 
 impl DifficultEvaluator for SmallerComponentsFirst {
@@ -50,7 +51,7 @@ impl DifficultEvaluator for SmallerComponentsFirst {
     }
 }
 
-/// Move sorter and difficult evaluator which evaluate positions with less components and more moves as harder to solve.
+/// Move sorter and difficult evaluator which evaluates positions with more moves as harder to solve.
 pub struct LessMovesFirst;
 
 impl DifficultEvaluator for LessMovesFirst {

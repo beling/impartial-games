@@ -11,6 +11,10 @@ pub trait DefSimpleGameSolver<G> where G: SimpleGame {
     fn nimber_def(&mut self, position: G::Position) -> u8;
 
     /// Calculates nimber of the initial position of the game.
+    ///
+    /// If the game reports (via [`Game::is_initial_position_winning`]) that the initial position
+    /// is losing, `0` is returned immediately; if it reports that the initial position is winning
+    /// and has exactly one move, `1` is returned immediately.
     fn nimber_of_initial_def(&mut self) -> u8;
 }
 
@@ -32,6 +36,10 @@ pub trait DefDecomposableGameSolver<G> where G: DecomposableGame {
     }*/
 
     /// Calculates nimber of the initial position of the game.
+    ///
+    /// If the game reports (via [`Game::is_initial_position_winning`]) that the initial position
+    /// is losing, `0` is returned immediately; if it reports that the initial position is winning
+    /// and has exactly one move, `1` is returned immediately.
     fn nimber_of_initial_def(&mut self) -> u8;
 }
 impl<G, TT, EDB, SORTER, STATS> DefSimpleGameSolver<G> for Solver<'_, G, TT, EDB, SORTER, STATS>

@@ -8,7 +8,7 @@
 //! denote the empty squares). Positions and their components are kept in normalized
 //! (canonical) form - the smallest among the images under the symmetries of the board.
 //! As positions can become decomposable (split into independent regions of empty squares),
-//! [`Cram`] implements [`DecomposableGame`](crate::game::DecomposableGame).
+//! [`Cram`] implements [`DecomposableGame`].
 
 use std::collections::HashMap;
 use std::fmt;
@@ -62,7 +62,7 @@ impl Game for Cram {
     type Position = u64;
     type NimberSet = u32;
 
-    /// Return number of moves in p.
+    /// Returns the number of moves available in the position `p`.
     #[inline]
     fn moves_count(&self, p: &u64) -> u16 {
         (self.horizontal_moves(*p).count_ones() + self.vertical_moves(*p).count_ones()) as u16
@@ -84,6 +84,8 @@ impl Game for Cram {
 
 impl_serializable_game_for!(Cram);
 
+/// The (non-decomposable) components of a decomposable Cram position.
+/// (Nimbers of two equal components xor to 0, so duplicates are dropped by the decomposition.)
 type DecomposedCramPosition = arrayvec::ArrayVec::<u64, 8>;
 
 impl DecomposableGame for Cram {
@@ -118,7 +120,7 @@ impl DecomposableGame for Cram {
 
 impl Cram {
 
-    /// Construct Cram game played on board with given size (number of columns and rows).
+    /// Constructs the Cram game played on a board with the given size (number of columns and rows).
     /// Note that only boards with no more than 64 fields are supported.
     pub fn new(number_of_cols: u8, number_of_rows: u8) -> Cram {
         assert!(number_of_cols * number_of_rows <= 64);

@@ -19,7 +19,7 @@ pub struct SliceIterator<'a> {
 impl SliceIterator<'_> {
     /// Constructs the iterator over the positions of the slice with the given `slice_index`
     /// (positions are examined up to `max_end`, exclusively).
-    pub fn new(cram: &Cram, slice_index: usize, max_end: u64) -> SliceIterator {
+    pub fn new(cram: &Cram, slice_index: usize, max_end: u64) -> SliceIterator<'_> {
         let slice_index = slice_index as u64;
         SliceIterator { cram, current_position: slice_index << 32, end: max_end.min((slice_index+1)<<32) }
     }
@@ -66,7 +66,8 @@ impl EndDbSlicesProvider for &Cram {
     }*/
 }
 
-/// Slice Provider for Cram that expose position only up to the given number.
+/// Slice provider for Cram that exposes only the positions with numbers (in the internal representation)
+/// not greater than the given one.
 pub struct LimitedSliceProvider {
     /// Last position exposed.
     pub last_pos: u64
@@ -128,7 +129,7 @@ fn change_number_of_columns(src: u64, src_row_mask: u64, src_nr_of_cols: u8, dst
 impl LimitedColumnsSliceIterator<'_> {
     /// Constructs the iterator over the positions of the slice with the given `slice_index`
     /// (compressed positions are examined up to `max_end`, exclusively).
-    pub fn new(cram: &Cram, slice_index: usize, max_end: u64, number_of_columns_in_end_db: u8) -> LimitedColumnsSliceIterator {
+    pub fn new(cram: &Cram, slice_index: usize, max_end: u64, number_of_columns_in_end_db: u8) -> LimitedColumnsSliceIterator<'_> {
         let slice_index = slice_index as u64;
         LimitedColumnsSliceIterator { cram,
             current_position_compressed: slice_index << 32,
